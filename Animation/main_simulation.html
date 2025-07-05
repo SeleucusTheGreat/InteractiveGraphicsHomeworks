@@ -20,6 +20,7 @@
 <script type="text/javascript" src="ball.js"></script>
 <script type="text/javascript">
 
+const { mat4, vec3, vec4 } = glMatrix;
 	
 var meshInstances = [];
 const NUM_INSTANCES = 50; 
@@ -27,7 +28,7 @@ const SPHERE_RADIOUS = 0.08
 var boxDrawer;
 var ballDrawer;
 var canvas, gl;
-var perspectiveMatrix;	
+var perspectiveMatrix = mat4.create();	
 var rotX=0, rotY=0, transZ=5 
 var lastTime = 0; 
 
@@ -35,14 +36,14 @@ var viewProjMatrix;
 var viewMatrix; // Add view matrix
 const mouseState = {
     x: -1, y: -1,     
-    worldX: 0, worldY: 0, 
-    velX: 0, velY: 0,     
-    lastWorldX: 0, lastWorldY: 0,
+    worldX: 0, worldY: 0, worldZ: 0,
+    velX: 0, velY: 0, velZ: 0,
+    lastWorldX: 0, lastWorldY: 0, lastWorldZ: 0,
     hasMoved: false
 };
 
 // --- Physics Constants ---
-const GRAVITY = -2.5; 
+const GRAVITY = -9.8; 
 const DAMPING = 0.3;  
 const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const PUSHSTRENGHT = 0.1
@@ -56,14 +57,18 @@ function ResetPositions() {
     if (meshInstances.length === 0) return;
 
     for (var i = 0; i < meshInstances.length; i++) {
-        const newInstanceData = CreateInstance();
-        meshInstances[i].x = newInstanceData.x;
-        meshInstances[i].y = newInstanceData.y;
-        meshInstances[i].z = newInstanceData.z;
-        meshInstances[i].vx = newInstanceData.vx;
-        meshInstances[i].vy = newInstanceData.vy;
-        meshInstances[i].vz = newInstanceData.vz;
-        meshInstances[i].color = newInstanceData.color;
+        const newInstanceData = CreateInstance(); // Creates a new ball at a random position
+        const ballToReset = meshInstances[i];
+        
+        // Copy the new random position to the existing ball
+        vec3.copy(ballToReset.position, newInstanceData.position);
+        
+        // Reset velocity and acceleration to zero
+        vec3.zero(ballToReset.velocity);
+        vec3.zero(ballToReset.acceleration);
+        
+        // Reset color
+        ballToReset.color = newInstanceData.color;
     }
 }
 
@@ -113,19 +118,15 @@ function UpdateCanvasSize()
 
 function UpdateProjectionMatrix()
 {
-	var r = canvas.width / canvas.height;
-	var n = (transZ - 5);
+	const r = canvas.width / canvas.height;
+	let n = (transZ - 5);
 	const min_n = 0.001;
 	if ( n < min_n ) n = min_n;
-	var f = (transZ + 5);
-	var fov = 3.145 * 60 / 180;
-	var s = 1 / Math.tan( fov/2 );
-	perspectiveMatrix = [
-		s/r, 0, 0, 0,
-		0, s, 0, 0,
-		0, 0, (n+f)/(f-n), 1,
-		0, 0, -2*n*f/(f-n), 0
-	];
+	const f = (transZ + 5);
+	const fov = 3.145 * 60 / 180;
+	
+    // Use gl-matrix to create the perspective matrix
+    mat4.perspective(perspectiveMatrix, fov, r, n, f);
 }
 
 function updateMouseState(deltaTime) {
@@ -137,32 +138,30 @@ function updateMouseState(deltaTime) {
     const invMatrix = invertMatrix(viewProjMatrix);
     if (!invMatrix) return;
 
-    const nearPoint = [ndcX, ndcY, -1, 1];
-    const farPoint = [ndcX, ndcY, 1, 1];
+    // Use gl-matrix to unproject mouse coordinates from screen space to world space
+    const worldNear = vec3.create();
+    const worldFar = vec3.create();
+    vec3.transformMat4(worldNear, [ndcX, ndcY, -1.0], invMatrix);
+    vec3.transformMat4(worldFar, [ndcX, ndcY, 1.0], invMatrix);
 
-    const transformPoint = (p, m) => {
-        const [x, y, z, w] = [
-            p[0]*m[0] + p[1]*m[4] + p[2]*m[8] + p[3]*m[12],
-            p[0]*m[1] + p[1]*m[5] + p[2]*m[9] + p[3]*m[13],
-            p[0]*m[2] + p[1]*m[6] + p[2]*m[10] + p[3]*m[14],
-            p[0]*m[3] + p[1]*m[7] + p[2]*m[11] + p[3]*m[15]
-        ];
-        return [x/w, y/w, z/w];
-    };
-    const worldNear = transformPoint(nearPoint, invMatrix);
-    const worldFar = transformPoint(farPoint, invMatrix);
+	//solving the equation for y = -0.95 or the lower floor of the box
+    const rayDirY = worldFar[1] - worldNear[1];
+    if (Math.abs(rayDirY) < 0.0001) return; 
+    const t = (-0.95 - worldNear[1]) / rayDirY; 
 
-    // Project mouse onto the new floor at y = -1.0
-    const t = (-0.95 - worldNear[1]) / (worldFar[1] - worldNear[1]); 
-	const worldX = worldNear[0] + t * (worldFar[0] - worldNear[0]);
-	const worldZ = worldNear[2] + t * (worldFar[2] - worldNear[2]); 
+
+    const worldPos = vec3.create();
+    const rayDir = vec3.create();
+    vec3.subtract(rayDir, worldFar, worldNear);
+    vec3.scaleAndAdd(worldPos, worldNear, rayDir, t);
 	
-	mouseState.worldX = worldX;
-	mouseState.worldZ = worldZ; 
-
+	mouseState.worldX = worldPos[0];
+    mouseState.worldY = worldPos[1];
+	mouseState.worldZ = worldPos[2]; 
 	
 	if (mouseState.hasMoved && deltaTime > 0) {
 		mouseState.velX = (mouseState.worldX - mouseState.lastWorldX) / deltaTime;
+        // No vertical mouse velocity needed for this interaction
 		mouseState.velZ = (mouseState.worldZ - mouseState.lastWorldZ) / deltaTime; 
 	}
 
@@ -181,8 +180,8 @@ function DrawScene()
 	if (ballDrawer.numIndices > 0) { 
 		for (var i = 0; i < meshInstances.length ; i++) {
 			var inst = meshInstances[i];
-            // Access position and color from the Ball object's properties
-			var transM = TranslationMatrix(inst.position.x, inst.position.y, inst.position.z); 
+            // Access position from the Ball object's vec3 property
+			var transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
 			ballDrawer.draw(viewProjMatrix, viewMatrix, transM, inst.color, LIGHT_POSITION);
 		}
 	}
@@ -225,7 +224,8 @@ window.onload = function() {
         meshInstances.push(CreateInstance());
     }
 	
-    window.onmousemove = function(event) {
+    // We only need to track mouse position when it moves over the canvas
+    canvas.onmousemove = function(event) {
         const rect = canvas.getBoundingClientRect();
         mouseState.x = event.clientX - rect.left;
         mouseState.y = event.clientY - rect.top;
@@ -246,17 +246,20 @@ window.onload = function() {
 			}
 		} else {
 			canvas.onmousemove = function() {
-				rotY += (cx - event.clientX)/canvas.width*5;
-				rotX += (cy - event.clientY)/canvas.height*5;
+				rotY += (event.clientX- cx)/canvas.width*5;
+				rotX += (event.clientY- cy)/canvas.height*5;
 				cx = event.clientX;
 				cy = event.clientY;
 			}
 		}
 	}
-	canvas.onmouseup = canvas.onmouseleave = function() {
-        if (!event.ctrlKey) {
-            canvas.onmousemove = null;
-        }
+	canvas.onmouseup = canvas.onmouseleave = function(event) {
+        // Keep tracking mouse position on leave/up, just stop camera movement
+        canvas.onmousemove = function(event) {
+            const rect = canvas.getBoundingClientRect();
+            mouseState.x = event.clientX - rect.left;
+            mouseState.y = event.clientY - rect.top;
+        };
 	}
 	
 	requestAnimationFrame(Animate);
