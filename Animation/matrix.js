@@ -62,8 +62,37 @@ function ScalingMatrix(sx, sy, sz) {
     ];
 }
 
+function ViewMatrix( translationX, translationY, translationZ, rotationX, rotationY )
+{
+	var T = [
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		translationX, translationY, translationZ, 1
+	];
 
-function GetModelViewProjection( projectionMatrix, translationX, translationY, translationZ, rotationX, rotationY )
+	var cX = Math.cos( rotationX );
+	var sX = Math.sin( rotationX );
+	var cY = Math.cos( rotationY );
+	var sY = Math.sin( rotationY );
+	
+	var Rx = [
+		1,  0,  0,  0,
+		0, cX, sX,  0,
+		0,-sX, cX,  0,
+		0,  0,  0,  1
+	];
+	var Ry = [
+		cY, 0,-sY,  0,
+		 0, 1,  0,  0,
+		sY, 0, cY,  0,
+		 0, 0,  0,  1
+	];
+	var mv = MatrixMult( T, MatrixMult( Ry, Rx ) );
+	return mv;
+}
+
+function ViewProjectionMatrix( projectionMatrix, translationX, translationY, translationZ, rotationX, rotationY )
 {
 	var cosX = Math.cos(rotationX);
 	var sinX = Math.sin(rotationX);

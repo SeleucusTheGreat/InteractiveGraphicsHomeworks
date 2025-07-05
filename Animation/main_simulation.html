@@ -20,7 +20,7 @@
 
 	
 var meshInstances = [];
-const NUM_INSTANCES = 1000; 
+const NUM_INSTANCES = 100; 
 const SPHERE_RADIOUS = 0.05
 var boxDrawer;
 var meshDrawer;
@@ -167,40 +167,15 @@ function updateMouseState(deltaTime) {
 function DrawScene()
 {
 	if (!meshDrawer || !boxDrawer) return;
-	
-	var cosRotX = Math.cos(rotX);
-	var sinRotX = Math.sin(rotX);
-	var cosRotY = Math.cos(rotY);
-	var sinRotY = Math.sin(rotY);
 
-	// Calculate camera position
-	const camX = transZ * cosRotX * sinRotY;
-	const camY = transZ * -sinRotX;
-	const camZ = transZ * cosRotX * cosRotY;
-
-	cosY=cosRotY
-	sinX=sinRotY
-	cosX=cosRotX 
-	sinY=sinRotY
-
-	// Create view matrix (inverse of camera transform)
-	viewMatrix = [
-		cosY, sinX*sinY, -cosX*sinY, 0,
-		0, cosX, sinX, 0,
-		sinY, -sinX*cosY, cosX*cosY, 0,
-		-camX, -camY, -camZ, 1
-	];
-
-	viewProjMatrix = GetModelViewProjection( perspectiveMatrix, 0, 0, transZ, rotX, rotY );
-	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+	viewMatrix = ViewMatrix( 0, 0, transZ, rotX, rotY )
+	viewProjMatrix = ViewProjectionMatrix( perspectiveMatrix, 0, 0, transZ, rotX, rotY );
 	
 	if (meshDrawer.numIndices > 0) { 
 		for (var i = 0; i < meshInstances.length ; i++) {
 			var inst = meshInstances[i];
 			var transM = TranslationMatrix(inst.x, inst.y, inst.z); 
-			var finalMvp = MatrixMult(viewProjMatrix, transM);
-
-			meshDrawer.draw(finalMvp, transM, viewMatrix, inst.color, LIGHT_POSITION);
+			meshDrawer.draw(viewProjMatrix, viewMatrix, transM, inst.color, LIGHT_POSITION);
 		}
 	}
 	

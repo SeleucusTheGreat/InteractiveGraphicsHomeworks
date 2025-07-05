@@ -2,64 +2,68 @@ const VertexShader = `
     attribute vec3 a_position;
     attribute vec3 a_normal;
 
-    uniform mat4 u_mvp;
-    uniform mat4 u_modelMatrix;
-    uniform mat4 u_viewMatrix;
+    uniform mat4 mvp;
+    uniform mat4 mv;
+    uniform mat4 traslation;
 
     varying vec3 v_normal;
     varying vec3 v_fragPos;
-    varying vec3 v_viewPos;
+    
 
     void main() {
         // Transform position to world space
-        vec4 worldPos = u_modelMatrix * vec4(a_position, 1.0);
+        vec4 worldPos = traslation * vec4(a_position, 1.0);
         v_fragPos = worldPos.xyz;
         
         // Transform to clip space
-        gl_Position = u_mvp * vec4(a_position, 1.0);
+        gl_Position = mvp * worldPos;
         
         // Transform normal to world space
-        v_normal = normalize(mat3(u_modelMatrix) * a_normal);
+        v_normal = normalize(mat3(traslation) * a_normal);
         
-        // Extract view position from view matrix (camera position in world space)
-        v_viewPos = vec3(u_viewMatrix[3][0], u_viewMatrix[3][1], u_viewMatrix[3][2]);
     }
 `;
 
 const FragmentShader = `
     precision mediump float;
 
-    uniform vec4 u_color;      
-    uniform vec3 u_lightPos;   // Light position in world space
+    
+    varying vec3 v_normal;    // World-space normal
+    varying vec3 v_fragPos;   // World-space fragment position
 
-    varying vec3 v_normal;
-    varying vec3 v_fragPos;    // Fragment position in world space
-    varying vec3 v_viewPos;    // Camera position in world space
+
+    uniform vec4 u_color;      // Base color 
+    uniform vec3 u_lightPos;   // Light position in world space
+    uniform vec3 u_viewPos;    // Camera position in world space
 
     void main() {
-        // --- Lighting Constants ---
+        // --- Lighting properties ---
+
         float ambientStrength = 0.1;
-        vec3 lightColor = vec3(1.0, 1.0, 1.0);
-        float shininess = 50.0;
+        vec3 ambientColor = ambientStrength * u_color.rgb;
 
-        // --- Ambient Component ---
-        vec3 ambient = ambientStrength * lightColor;
-
-        // --- Diffuse Component ---
-        vec3 norm = normalize(v_normal);
+        // --- Diffuse calculation ---
+        
+        vec3 norm = normalize(v_normal); 
         vec3 lightDir = normalize(u_lightPos - v_fragPos);
         float diff = max(dot(norm, lightDir), 0.0);
-        vec3 diffuse = diff * lightColor;
+        vec3 diffuseColor = diff * u_color.rgb;
 
-        // --- Specular Component (Blinn-Phong) ---
-        vec3 viewDir = normalize(v_viewPos - v_fragPos);
-        vec3 halfwayDir = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess);
-        vec3 specular = spec * lightColor; 
+        // --- Specular calculation---
 
-        // --- Final Color ---
-        vec3 result = (ambient + diffuse) * u_color.rgb + specular;
-        gl_FragColor = vec4(result, u_color.a);
+        float specularStrength = 0.8; 
+        float shininess = 32.0;      
+        vec3 viewDir = normalize(u_viewPos - v_fragPos);  // view vector
+        vec3 halfwayDir = normalize(lightDir + viewDir); // halfway vector
+        float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess); // specular factor
+        vec3 specularColor = specularStrength * spec * vec3(1.0, 1.0, 1.0);
+
+
+        // Combine ambient, diffuse, and specular components
+        vec3 finalColor = ambientColor + diffuseColor + specularColor;
+        
+        // Set the final fragment color, retaining the original alpha
+        gl_FragColor = vec4(finalColor, u_color.a);
     }
 `; 
 
@@ -71,9 +75,9 @@ class MeshDrawer
 
         this.posAttribLoc = gl.getAttribLocation( this.prog, 'a_position' );
         this.normAttribLoc = gl.getAttribLocation( this.prog, 'a_normal' );
-        this.mvpUniformLoc = gl.getUniformLocation( this.prog, 'u_mvp' );
-        this.modelMatrixUniformLoc = gl.getUniformLocation( this.prog, 'u_modelMatrix' );
-        this.viewMatrixUniformLoc = gl.getUniformLocation( this.prog, 'u_viewMatrix' );
+        this.mvp = gl.getUniformLocation( this.prog, 'mvp' );
+        this.traslation = gl.getUniformLocation( this.prog, 'traslation' );
+        this.mv = gl.getUniformLocation( this.prog, 'mv' );
         this.colorUniformLoc = gl.getUniformLocation( this.prog, 'u_color' );
         this.lightPosUniformLoc = gl.getUniformLocation( this.prog, 'u_lightPos' );
         
@@ -131,15 +135,16 @@ class MeshDrawer
         return { vertices, indices, normals };
     }
 
-    draw( mvp, modelMatrix, viewMatrix, color, lightPos )
+    draw( mvp, mv , traslation, color, lightPos )
     {
+
         if (this.numIndices === 0) return;
 
         gl.useProgram(this.prog);
 
-        gl.uniformMatrix4fv(this.mvpUniformLoc, false, mvp);
-        gl.uniformMatrix4fv(this.modelMatrixUniformLoc, false, modelMatrix);
-        gl.uniformMatrix4fv(this.viewMatrixUniformLoc, false, viewMatrix);
+        gl.uniformMatrix4fv(this.mvp , false, mvp);
+        gl.uniformMatrix4fv(this.mv, false, mv);
+        gl.uniformMatrix4fv(this.traslation ,false, traslation);
         gl.uniform4fv(this.colorUniformLoc, color);
         gl.uniform3fv(this.lightPosUniformLoc, lightPos);
 
