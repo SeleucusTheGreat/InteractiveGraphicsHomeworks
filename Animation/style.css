@@ -1,0 +1,49 @@
+html {
+    color: white;
+    background-color: black;
+    font-family: Arial;
+    overflow: hidden;
+    height: 100%;
+}
+body {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+input[type=checkbox], label {
+    cursor: pointer;
+}
+input[type=range] { /* This can be removed if no range inputs exist */
+    width: 100%;
+}
+canvas {
+    display: block;
+    position: absolute;
+    top:  0;
+    left: 0;
+    width:  100%;
+    height: 100%;
+}
+#canvas-div { /* MODIFIED: Make this take full screen */
+    position: relative;
+    box-sizing: border-box;
+    width: 100%; /* Ensure it takes full width */
+    height: 100%; /* Ensure it takes full height */
+}
+/* REMOVE: All styles for #controls-div, #controls, .control-group, .control */
+/* You can delete these CSS rules entirely */
+
+/* MODIFIED: Responsive Layout - only for canvas-div now */
+@media (orientation: landscape) {
+    #canvas-div {
+        display: block; /* Change from inline-block if no other inline elements */
+        width:   100%; /* Take full width */
+        height: 100%; /* Take full height */
+    }
+}
+@media (orientation: portrait) {
+    #canvas-div {
+        width:  100%; /* Take full width */
+        height: 100%; /* Take full height */
+    }
+}

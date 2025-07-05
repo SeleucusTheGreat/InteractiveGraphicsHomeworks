@@ -1,0 +1,297 @@
+<!doctype html>
+<html>
+<head>
+<title>WebGL Physics Spheres</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body onresize="WindowResize()">
+<div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
+    <div>
+        <button onclick="ResetPositions()">Reset Objects</button>
+    </div>
+</div>
+<div id="canvas-div"><canvas id="canvas"></canvas></div>
+</div>
+<script type="text/javascript" id="includedscript" src="matrix.js"></script>
+<script type="text/javascript" id="includedscript" src="box.js"></script>
+<script type="text/javascript" src="mesh.js"></script>
+<script type="text/javascript" src="physics.js"></script>
+<script type="text/javascript">
+
+	
+var meshInstances = [];
+const NUM_INSTANCES = 1000; 
+const SPHERE_RADIOUS = 0.05
+var boxDrawer;
+var meshDrawer;
+var canvas, gl;
+var perspectiveMatrix;	
+var rotX=0, rotY=0, transZ=3 
+var lastTime = 0; 
+
+var viewProjMatrix; 
+var viewMatrix; // Add view matrix
+const mouseState = {
+    x: -1, y: -1,     
+    worldX: 0, worldY: 0, 
+    velX: 0, velY: 0,     
+    lastWorldX: 0, lastWorldY: 0,
+    hasMoved: false
+};
+
+// --- Physics Constants ---
+const GRAVITY = -2.5; 
+const DAMPING = 0.5;  
+const BOX_BOUNDS = { x: 2.0, y: 0.5, z: 0.5 }; 
+const PUSHSTRENGHT = 0.1
+const MOUSE_INTERACTION_RADIUS = 0.05; 
+const MOUSE_FORCE_MULTIPLIER = 0.1; 
+
+// --- Light Constants ---
+const LIGHT_POSITION = [0.0, 3.0, 0.0];
+
+function ResetPositions() {
+    if (meshInstances.length === 0) return;
+
+    for (var i = 0; i < meshInstances.length; i++) {
+        const newInstanceData = CreateInstance();
+        meshInstances[i].x = newInstanceData.x;
+        meshInstances[i].y = newInstanceData.y;
+        meshInstances[i].z = newInstanceData.z;
+        meshInstances[i].vx = newInstanceData.vx;
+        meshInstances[i].vy = newInstanceData.vy;
+        meshInstances[i].vz = newInstanceData.vz;
+        meshInstances[i].color = newInstanceData.color;
+    }
+}
+
+function CreateInstance() {
+    var x = (Math.random() - 0.5) * 3;
+    var y = (Math.random() * 0.4) + 0.1; 
+    var z = (Math.random() - 0.5) * 0.5;
+    const redColor = [1.0, 0.2, 0.2, 1.0];
+    const blueColor = [0.2, 0.5, 1.0, 1.0];
+    var instanceColor = Math.random() < 0.5 ? redColor : blueColor;
+    return { x: x, y: y, z: z, vx: 0, vy: 0, vz: 0, color: instanceColor };
+}
+
+function InitWebGL()
+{
+	canvas = document.getElementById("canvas");
+	canvas.oncontextmenu = function() {return false;};
+	gl = canvas.getContext("webgl", {antialias: false, depth: true});	
+	if (!gl) {
+		alert("Unable to initialize WebGL. Your browser or machine may not support it.");
+		return;
+	}
+	gl.clearColor(0,0,0,0); 
+	gl.enable(gl.DEPTH_TEST);
+	boxDrawer  = new BoxDrawer();
+	meshDrawer = new MeshDrawer();
+	UpdateCanvasSize();
+}
+
+function UpdateCanvasSize()
+{
+	canvas.style.width   = "100%";
+	canvas.style.height = "100%";
+	const pixelRatio = window.devicePixelRatio || 1;
+	canvas.width  = pixelRatio * canvas.clientWidth;
+	canvas.height = pixelRatio * canvas.clientHeight;
+	const width  = (canvas.width  / pixelRatio);
+	const height = (canvas.height / pixelRatio);
+	canvas.style.width  = width  + 'px';
+	canvas.style.height = height + 'px';
+	gl.viewport( 1, 1, canvas.width, canvas.height );
+	UpdateProjectionMatrix();
+}
+
+function UpdateProjectionMatrix()
+{
+	var r = canvas.width / canvas.height;
+	var n = (transZ - 5);
+	const min_n = 0.001;
+	if ( n < min_n ) n = min_n;
+	var f = (transZ + 5);
+	var fov = 3.145 * 60 / 180;
+	var s = 1 / Math.tan( fov/2 );
+	perspectiveMatrix = [
+		s/r, 0, 0, 0,
+		0, s, 0, 0,
+		0, 0, (n+f)/(f-n), 1,
+		0, 0, -2*n*f/(f-n), 0
+	];
+}
+
+function updateMouseState(deltaTime) {
+    if (mouseState.x < 0 || !viewProjMatrix) return; 
+
+    const ndcX = (mouseState.x / gl.canvas.clientWidth) * 2 - 1;
+    const ndcY = 1 - (mouseState.y / gl.canvas.clientHeight) * 2; 
+
+    const invMatrix = invertMatrix(viewProjMatrix);
+    if (!invMatrix) return;
+
+    const nearPoint = [ndcX, ndcY, -1, 1];
+    const farPoint = [ndcX, ndcY, 1, 1];
+
+    const transformPoint = (p, m) => {
+        const [x, y, z, w] = [
+            p[0]*m[0] + p[1]*m[4] + p[2]*m[8] + p[3]*m[12],
+            p[0]*m[1] + p[1]*m[5] + p[2]*m[9] + p[3]*m[13],
+            p[0]*m[2] + p[1]*m[6] + p[2]*m[10] + p[3]*m[14],
+            p[0]*m[3] + p[1]*m[7] + p[2]*m[11] + p[3]*m[15]
+        ];
+        return [x/w, y/w, z/w];
+    };
+    const worldNear = transformPoint(nearPoint, invMatrix);
+    const worldFar = transformPoint(farPoint, invMatrix);
+
+    const t = (-0.45 - worldNear[1]) / (worldFar[1] - worldNear[1]); 
+	const worldX = worldNear[0] + t * (worldFar[0] - worldNear[0]);
+	const worldZ = worldNear[2] + t * (worldFar[2] - worldNear[2]); 
+	
+	mouseState.worldX = worldX;
+	mouseState.worldZ = worldZ; 
+	
+	if (mouseState.hasMoved && deltaTime > 0) {
+		mouseState.velX = (mouseState.worldX - mouseState.lastWorldX) / deltaTime;
+		mouseState.velZ = (mouseState.worldZ - mouseState.lastWorldZ) / deltaTime; 
+	}
+
+	mouseState.lastWorldX = mouseState.worldX;
+	mouseState.lastWorldZ = mouseState.worldZ; 
+	mouseState.hasMoved = true;
+}
+
+function DrawScene()
+{
+	if (!meshDrawer || !boxDrawer) return;
+	
+	var cosRotX = Math.cos(rotX);
+	var sinRotX = Math.sin(rotX);
+	var cosRotY = Math.cos(rotY);
+	var sinRotY = Math.sin(rotY);
+
+	// Calculate camera position
+	const camX = transZ * cosRotX * sinRotY;
+	const camY = transZ * -sinRotX;
+	const camZ = transZ * cosRotX * cosRotY;
+
+	cosY=cosRotY
+	sinX=sinRotY
+	cosX=cosRotX 
+	sinY=sinRotY
+
+	// Create view matrix (inverse of camera transform)
+	viewMatrix = [
+		cosY, sinX*sinY, -cosX*sinY, 0,
+		0, cosX, sinX, 0,
+		sinY, -sinX*cosY, cosX*cosY, 0,
+		-camX, -camY, -camZ, 1
+	];
+
+	viewProjMatrix = GetModelViewProjection( perspectiveMatrix, 0, 0, transZ, rotX, rotY );
+	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+	
+	if (meshDrawer.numIndices > 0) { 
+		for (var i = 0; i < meshInstances.length ; i++) {
+			var inst = meshInstances[i];
+			var transM = TranslationMatrix(inst.x, inst.y, inst.z); 
+			var finalMvp = MatrixMult(viewProjMatrix, transM);
+
+			meshDrawer.draw(finalMvp, transM, viewMatrix, inst.color, LIGHT_POSITION);
+		}
+	}
+	
+	boxDrawer.draw(viewProjMatrix);
+}
+
+function InitShaderProgram( vsSource, fsSource )
+{
+	const vs = CompileShader( gl.VERTEX_SHADER,   vsSource );
+	const fs = CompileShader( gl.FRAGMENT_SHADER, fsSource );
+	const prog = gl.createProgram();
+	gl.attachShader(prog, vs);
+	gl.attachShader(prog, fs);
+	gl.linkProgram(prog);
+	if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+		alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(prog));
+		return null;
+	}
+	return prog;
+}
+
+function CompileShader( type, source )
+{
+	const shader = gl.createShader(type);
+	gl.shaderSource(shader, source);
+	gl.compileShader(shader);
+	if (!gl.getShaderParameter( shader, gl.COMPILE_STATUS) ) {
+		alert('An error occurred compiling shader:\n' + gl.getShaderInfoLog(shader));
+		gl.deleteShader(shader);
+		return null;
+	}
+	return shader;
+}
+
+window.onload = function() {
+	InitWebGL();
+    meshInstances = []; 
+    for (var i = 0; i < NUM_INSTANCES; i++) {
+        meshInstances.push(CreateInstance());
+    }
+	
+    window.onmousemove = function(event) {
+        const rect = canvas.getBoundingClientRect();
+        mouseState.x = event.clientX - rect.left;
+        mouseState.y = event.clientY - rect.top;
+    };
+
+	canvas.zoom = function( s ) {
+		transZ *= s/canvas.height + 1;
+		UpdateProjectionMatrix();
+	}
+	canvas.onwheel = function() { canvas.zoom(0.3*event.deltaY); } 
+	canvas.onmousedown = function() {
+		var cx = event.clientX;
+		var cy = event.clientY;
+		if ( event.ctrlKey ) {
+			canvas.onmousemove = function() {
+				canvas.zoom(5*(event.clientY - cy));
+				cy = event.clientY;
+			}
+		} else {
+			canvas.onmousemove = function() {
+				rotY += (cx - event.clientX)/canvas.width*5;
+				rotX += (cy - event.clientY)/canvas.height*5;
+				cx = event.clientX;
+				cy = event.clientY;
+			}
+		}
+	}
+	canvas.onmouseup = canvas.onmouseleave = function() {
+        if (!event.ctrlKey) {
+            canvas.onmousemove = null;
+        }
+	}
+	
+	requestAnimationFrame(Animate);
+};
+
+function WindowResize() { UpdateCanvasSize(); }
+
+function Animate(currentTime) {
+	requestAnimationFrame(Animate);
+    currentTime *= 0.001;
+    const deltaTime = lastTime > 0 ? currentTime - lastTime : 1/60; 
+    lastTime = currentTime;
+
+    updateMouseState(deltaTime);
+    UpdatePhysics(deltaTime);
+    DrawScene();
+}
+
+</script>
+</body>
+</html>
