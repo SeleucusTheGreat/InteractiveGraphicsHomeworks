@@ -1,5 +1,4 @@
 
-
 function UpdatePhysics(deltaTime) {
     if (meshInstances.length === 0) return;
     GravityUpdate(deltaTime);
@@ -25,7 +24,7 @@ function handleMouseInteraction(deltaTime) {
 
     for (const inst of meshInstances) {
         const dx = inst.x - mouseState.worldX;
-        const dy = inst.y - (-0.5);
+        const dy = inst.y - (-1.0); // y-position of the interaction plane (the floor)
         const dz = inst.z - mouseState.worldZ;
         const distSq = dx * dx + dy * dy + dz * dz;
         const totalRadius = MOUSE_INTERACTION_RADIUS + SPHERE_RADIOUS;

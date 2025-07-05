@@ -20,13 +20,13 @@
 
 	
 var meshInstances = [];
-const NUM_INSTANCES = 100; 
-const SPHERE_RADIOUS = 0.05
+const NUM_INSTANCES = 1000; 
+const SPHERE_RADIOUS = 0.08
 var boxDrawer;
 var meshDrawer;
 var canvas, gl;
 var perspectiveMatrix;	
-var rotX=0, rotY=0, transZ=3 
+var rotX=0, rotY=0, transZ=5 
 var lastTime = 0; 
 
 var viewProjMatrix; 
@@ -41,11 +41,11 @@ const mouseState = {
 
 // --- Physics Constants ---
 const GRAVITY = -2.5; 
-const DAMPING = 0.5;  
-const BOX_BOUNDS = { x: 2.0, y: 0.5, z: 0.5 }; 
+const DAMPING = 0.3;  
+const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const PUSHSTRENGHT = 0.1
 const MOUSE_INTERACTION_RADIUS = 0.05; 
-const MOUSE_FORCE_MULTIPLIER = 0.1; 
+const MOUSE_FORCE_MULTIPLIER = 0.05; 
 
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 3.0, 0.0];
@@ -66,9 +66,10 @@ function ResetPositions() {
 }
 
 function CreateInstance() {
-    var x = (Math.random() - 0.5) * 3;
-    var y = (Math.random() * 0.4) + 0.1; 
-    var z = (Math.random() - 0.5) * 0.5;
+    
+    var x = (Math.random() - 0.5) * 3.8; 
+    var y = (Math.random() * 0.9) + 0.1;   
+    var z = (Math.random() - 0.5) * 3.8; 
     const redColor = [1.0, 0.2, 0.2, 1.0];
     const blueColor = [0.2, 0.5, 1.0, 1.0];
     var instanceColor = Math.random() < 0.5 ? redColor : blueColor;
@@ -147,12 +148,14 @@ function updateMouseState(deltaTime) {
     const worldNear = transformPoint(nearPoint, invMatrix);
     const worldFar = transformPoint(farPoint, invMatrix);
 
-    const t = (-0.45 - worldNear[1]) / (worldFar[1] - worldNear[1]); 
+    // Project mouse onto the new floor at y = -1.0
+    const t = (-0.95 - worldNear[1]) / (worldFar[1] - worldNear[1]); 
 	const worldX = worldNear[0] + t * (worldFar[0] - worldNear[0]);
 	const worldZ = worldNear[2] + t * (worldFar[2] - worldNear[2]); 
 	
 	mouseState.worldX = worldX;
 	mouseState.worldZ = worldZ; 
+
 	
 	if (mouseState.hasMoved && deltaTime > 0) {
 		mouseState.velX = (mouseState.worldX - mouseState.lastWorldX) / deltaTime;
