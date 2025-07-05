@@ -67,7 +67,7 @@ const FragmentShader = `
     }
 `; 
 
-class MeshDrawer
+class BallDrawer
 {
     constructor()
     {

@@ -12,18 +12,20 @@
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
 </div>
+<script type="text/javascript" src="gl-matrix.js"></script>
 <script type="text/javascript" id="includedscript" src="matrix.js"></script>
 <script type="text/javascript" id="includedscript" src="box.js"></script>
-<script type="text/javascript" src="mesh.js"></script>
+<script type="text/javascript" src="ball_drawer.js"></script>
 <script type="text/javascript" src="physics.js"></script>
+<script type="text/javascript" src="ball.js"></script>
 <script type="text/javascript">
 
 	
 var meshInstances = [];
-const NUM_INSTANCES = 1000; 
+const NUM_INSTANCES = 50; 
 const SPHERE_RADIOUS = 0.08
 var boxDrawer;
-var meshDrawer;
+var ballDrawer;
 var canvas, gl;
 var perspectiveMatrix;	
 var rotX=0, rotY=0, transZ=5 
@@ -66,15 +68,17 @@ function ResetPositions() {
 }
 
 function CreateInstance() {
-    
-    var x = (Math.random() - 0.5) * 3.8; 
-    var y = (Math.random() * 0.9) + 0.1;   
-    var z = (Math.random() - 0.5) * 3.8; 
+    const x = (Math.random() - 0.5) * 3.8; 
+    const y = (Math.random() * 0.9) + 0.1;   
+    const z = (Math.random() - 0.5) * 3.8; 
     const redColor = [1.0, 0.2, 0.2, 1.0];
     const blueColor = [0.2, 0.5, 1.0, 1.0];
-    var instanceColor = Math.random() < 0.5 ? redColor : blueColor;
-    return { x: x, y: y, z: z, vx: 0, vy: 0, vz: 0, color: instanceColor };
+    const instanceColor = Math.random() < 0.5 ? redColor : blueColor;
+
+    // Use the new Ball class!
+    return new Ball(x, y, z, SPHERE_RADIOUS, instanceColor);
 }
+
 
 function InitWebGL()
 {
@@ -88,7 +92,7 @@ function InitWebGL()
 	gl.clearColor(0,0,0,0); 
 	gl.enable(gl.DEPTH_TEST);
 	boxDrawer  = new BoxDrawer();
-	meshDrawer = new MeshDrawer();
+	ballDrawer = new BallDrawer();
 	UpdateCanvasSize();
 }
 
@@ -169,16 +173,17 @@ function updateMouseState(deltaTime) {
 
 function DrawScene()
 {
-	if (!meshDrawer || !boxDrawer) return;
+	if (!ballDrawer || !boxDrawer) return;
 
 	viewMatrix = ViewMatrix( 0, 0, transZ, rotX, rotY )
 	viewProjMatrix = ViewProjectionMatrix( perspectiveMatrix, 0, 0, transZ, rotX, rotY );
 	
-	if (meshDrawer.numIndices > 0) { 
+	if (ballDrawer.numIndices > 0) { 
 		for (var i = 0; i < meshInstances.length ; i++) {
 			var inst = meshInstances[i];
-			var transM = TranslationMatrix(inst.x, inst.y, inst.z); 
-			meshDrawer.draw(viewProjMatrix, viewMatrix, transM, inst.color, LIGHT_POSITION);
+            // Access position and color from the Ball object's properties
+			var transM = TranslationMatrix(inst.position.x, inst.position.y, inst.position.z); 
+			ballDrawer.draw(viewProjMatrix, viewMatrix, transM, inst.color, LIGHT_POSITION);
 		}
 	}
 	
