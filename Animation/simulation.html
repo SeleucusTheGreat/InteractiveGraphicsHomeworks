@@ -7,7 +7,9 @@
 <body onresize="WindowResize()">
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
-        <button onclick="ResetPositions()">Reset Objects</button>
+        <label for="numInstancesInput">Number of balls:</label>
+        <input type="number" id="numInstancesInput" value="100" min="1" max="5000" style="width: 60px;">
+        <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
     </div>
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
@@ -23,7 +25,6 @@
 const { mat4, vec3, vec4 } = glMatrix;
 	
 var meshInstances = [];
-const NUM_INSTANCES = 50; 
 const SPHERE_RADIOUS = 0.08
 var boxDrawer;
 var ballDrawer;
@@ -44,31 +45,36 @@ const mouseState = {
 
 // --- Physics Constants ---
 const GRAVITY = -9.8; 
-const DAMPING = 0.3;  
 const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const PUSHSTRENGHT = 0.1
 const MOUSE_INTERACTION_RADIUS = 0.05; 
-const MOUSE_FORCE_MULTIPLIER = 0.05; 
+const MOUSE_IMPULSE_MULTIPLIER = 0.001; 
+const RESTITUTION = 0.8; // Coefficient of bounciness. 1 = perfectly elastic, 0 = no bounce.
 
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 3.0, 0.0];
 
-function ResetPositions() {
-    if (meshInstances.length === 0) return;
+function ResetSimulation() {
+    const numInstancesInput = document.getElementById('numInstancesInput');
+    let numToSpawn = parseInt(numInstancesInput.value, 10);
 
-    for (var i = 0; i < meshInstances.length; i++) {
-        const newInstanceData = CreateInstance(); // Creates a new ball at a random position
-        const ballToReset = meshInstances[i];
-        
-        // Copy the new random position to the existing ball
-        vec3.copy(ballToReset.position, newInstanceData.position);
-        
-        // Reset velocity and acceleration to zero
-        vec3.zero(ballToReset.velocity);
-        vec3.zero(ballToReset.acceleration);
-        
-        // Reset color
-        ballToReset.color = newInstanceData.color;
+    // Basic validation to ensure the number is within reasonable bounds
+    const minVal = parseInt(numInstancesInput.min, 10) || 1;
+    const maxVal = parseInt(numInstancesInput.max, 10) || 5000;
+
+    if (isNaN(numToSpawn) || numToSpawn < minVal) {
+        numToSpawn = minVal;
+        numInstancesInput.value = minVal;
+    }
+    if (numToSpawn > maxVal) {
+        numToSpawn = maxVal;
+        numInstancesInput.value = maxVal;
+    }
+
+    // Clear old instances and create new ones
+    meshInstances = []; 
+    for (var i = 0; i < numToSpawn; i++) {
+        meshInstances.push(CreateInstance());
     }
 }
 
@@ -78,10 +84,18 @@ function CreateInstance() {
     const z = (Math.random() - 0.5) * 3.8; 
     const redColor = [1.0, 0.2, 0.2, 1.0];
     const blueColor = [0.2, 0.5, 1.0, 1.0];
-    const instanceColor = Math.random() < 0.5 ? redColor : blueColor;
+	if (Math.random() < 0.3){
+		density = 60
+		instanceColor = redColor
+		radius = 0.08
+	} else {
+		density = 3
+		instanceColor = blueColor
+		radius = 0.08
+	}
 
     // Use the new Ball class!
-    return new Ball(x, y, z, SPHERE_RADIOUS, instanceColor);
+    return new Ball(x, y, z, radius, instanceColor, density);
 }
 
 
@@ -219,10 +233,7 @@ function CompileShader( type, source )
 
 window.onload = function() {
 	InitWebGL();
-    meshInstances = []; 
-    for (var i = 0; i < NUM_INSTANCES; i++) {
-        meshInstances.push(CreateInstance());
-    }
+    ResetSimulation(); // Initialize the simulation with the default number of balls
 	
     // We only need to track mouse position when it moves over the canvas
     canvas.onmousemove = function(event) {

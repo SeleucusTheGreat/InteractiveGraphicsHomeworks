@@ -1,5 +1,5 @@
 class Ball {
-    constructor(x, y, z, radius, color) {
+    constructor(x, y, z, radius, color, density) {
 
         this.position = glMatrix.vec3.fromValues(x, y, z);
         this.velocity = glMatrix.vec3.create(); // Starts at [0, 0, 0]
@@ -8,10 +8,10 @@ class Ball {
         this.radius = radius;
         this.color = color;
         
-        const DENSITY = 3.0; 
+        const DENSITY = density; 
         const volume = (4/3) * Math.PI * Math.pow(this.radius, 3);
         this.mass = DENSITY * volume;
-        this.invMass = (this.mass > 0) ? 1.0 / this.mass : 0; 
+        this.invMass = (this.mass > 0) ? 1.0 / this.mass : 0;
     }
 
     // F=ma => a = F/m
@@ -42,5 +42,9 @@ class Ball {
 
         // clear accellerations
         glMatrix.vec3.zero(this.acceleration);
+    }
+
+    momentum(){
+        return this.mass*this.velocity
     }
 }
