@@ -3,24 +3,22 @@ const VertexShader = `
     attribute vec3 a_normal;
 
     uniform mat4 mvp;
-    uniform mat4 mv;
-    uniform mat4 traslation;
+    uniform mat4 model; 
 
     varying vec3 v_normal;
     varying vec3 v_fragPos;
     
-
     void main() {
-        // Transform position to world space
-        vec4 worldPos = traslation * vec4(a_position, 1.0);
+        // Transform position to world space using the model matrix
+        vec4 worldPos = model * vec4(a_position, 1.0);
         v_fragPos = worldPos.xyz;
         
-        // Transform to clip space
+        // Transform to clip space using the full Model-View-Projection matrix
         gl_Position = mvp * worldPos;
         
-        // Transform normal to world space
-        v_normal = normalize(mat3(traslation) * a_normal);
-        
+        // Transform normal to world space (using the model matrix)
+        // Using mat3 avoids issues with non-uniform scaling, though we use uniform scaling here.
+        v_normal = normalize(mat3(model) * a_normal);
     }
 `;
 
@@ -73,17 +71,21 @@ class BallDrawer
     {
         this.prog = InitShaderProgram( VertexShader, FragmentShader );
 
+        // Attribute locations
         this.posAttribLoc = gl.getAttribLocation( this.prog, 'a_position' );
         this.normAttribLoc = gl.getAttribLocation( this.prog, 'a_normal' );
+        
+        // Uniform locations
         this.mvp = gl.getUniformLocation( this.prog, 'mvp' );
-        this.traslation = gl.getUniformLocation( this.prog, 'traslation' );
-        this.mv = gl.getUniformLocation( this.prog, 'mv' );
+        this.model = gl.getUniformLocation( this.prog, 'model' ); // Changed from 'traslation'
+        this.mv = gl.getUniformLocation( this.prog, 'mv' ); // This uniform is passed but not used in shader
         this.colorUniformLoc = gl.getUniformLocation( this.prog, 'u_color' );
         this.lightPosUniformLoc = gl.getUniformLocation( this.prog, 'u_lightPos' );
         
-        const { vertices, indices, normals } = this.createSphereData(SPHERE_RADIOUS, 16, 16);
+        const { vertices, indices, normals } = this.createSphereData(1.0, 16, 16);
         this.numIndices = indices.length;
 
+        // --- Buffers ---
         this.vertBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -117,6 +119,7 @@ class BallDrawer
                 let z = radius * sinLat * sinLong;
                 vertices.push(x, y, z);
 
+                // For a perfect sphere, normals are just normalized positions
                 let nx = x / radius;
                 let ny = y / radius;
                 let nz = z / radius;
@@ -135,19 +138,21 @@ class BallDrawer
         return { vertices, indices, normals };
     }
 
-    draw( mvp, mv , traslation, color, lightPos )
+    draw( mvp, mv , modelMatrix, color, lightPos )
     {
 
         if (this.numIndices === 0) return;
 
         gl.useProgram(this.prog);
 
+        // Set uniforms
         gl.uniformMatrix4fv(this.mvp , false, mvp);
-        gl.uniformMatrix4fv(this.mv, false, mv);
-        gl.uniformMatrix4fv(this.traslation ,false, traslation);
+        gl.uniformMatrix4fv(this.mv, false, mv); // Still passing this, though unused in shader
+        gl.uniformMatrix4fv(this.model ,false, modelMatrix); // Use the new 'model' uniform
         gl.uniform4fv(this.colorUniformLoc, color);
         gl.uniform3fv(this.lightPosUniformLoc, lightPos);
 
+        // Bind and set vertex attributes
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.vertexAttribPointer(this.posAttribLoc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.posAttribLoc);
@@ -156,9 +161,11 @@ class BallDrawer
         gl.vertexAttribPointer(this.normAttribLoc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.normAttribLoc);
         
+        // Draw the sphere
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         gl.drawElements( gl.TRIANGLES, this.numIndices, gl.UNSIGNED_SHORT, 0 );
 
+        // Clean up
         gl.disableVertexAttribArray(this.posAttribLoc);
         gl.disableVertexAttribArray(this.normAttribLoc); 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);

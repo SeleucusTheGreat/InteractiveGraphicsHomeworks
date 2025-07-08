@@ -64,7 +64,7 @@ function handleInterObjectCollisions() {
             const diameterSq = totalRadius * totalRadius;
 
             // Check for collision
-            if (distSq < diameterSq && distSq > 0.0001) {
+            if (distSq < diameterSq && distSq > 0.005) {
                 const dist = Math.sqrt(distSq);
                 glMatrix.vec3.normalize(collisionNormal, collisionNormal);
 
@@ -92,6 +92,7 @@ function handleInterObjectCollisions() {
 
                 // 4. Calculate impulse scalar (j)
                 const j = -(1 + RESTITUTION) * velAlongNormal / totalInvMass;
+            
 
                 // 5. Apply impulse vector
                 glMatrix.vec3.scale(impulseVec, collisionNormal, j);

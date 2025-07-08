@@ -8,7 +8,7 @@
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
         <label for="numInstancesInput">Number of balls:</label>
-        <input type="number" id="numInstancesInput" value="100" min="1" max="5000" style="width: 60px;">
+        <input type="number" id="numInstancesInput" value="100" min="1" max="1000" style="width: 60px;">
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
     </div>
 </div>
@@ -25,7 +25,6 @@
 const { mat4, vec3, vec4 } = glMatrix;
 	
 var meshInstances = [];
-const SPHERE_RADIOUS = 0.08
 var boxDrawer;
 var ballDrawer;
 var canvas, gl;
@@ -34,7 +33,7 @@ var rotX=0, rotY=0, transZ=5
 var lastTime = 0; 
 
 var viewProjMatrix; 
-var viewMatrix; // Add view matrix
+var viewMatrix; 
 const mouseState = {
     x: -1, y: -1,     
     worldX: 0, worldY: 0, worldZ: 0,
@@ -48,8 +47,8 @@ const GRAVITY = -9.8;
 const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const PUSHSTRENGHT = 0.1
 const MOUSE_INTERACTION_RADIUS = 0.05; 
-const MOUSE_IMPULSE_MULTIPLIER = 0.001; 
-const RESTITUTION = 0.8; // Coefficient of bounciness. 1 = perfectly elastic, 0 = no bounce.
+const MOUSE_IMPULSE_MULTIPLIER = 0.05; 
+const RESTITUTION = 0.5; // Coefficient of bounciness. 1 = perfectly elastic, 0 = no bounce.
 
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 3.0, 0.0];
@@ -82,20 +81,38 @@ function CreateInstance() {
     const x = (Math.random() - 0.5) * 3.8; 
     const y = (Math.random() * 0.9) + 0.1;   
     const z = (Math.random() - 0.5) * 3.8; 
-    const redColor = [1.0, 0.2, 0.2, 1.0];
-    const blueColor = [0.2, 0.5, 1.0, 1.0];
-	if (Math.random() < 0.3){
-		density = 60
-		instanceColor = redColor
-		radius = 0.08
-	} else {
-		density = 3
-		instanceColor = blueColor
-		radius = 0.08
-	}
 
-    // Use the new Ball class!
-    return new Ball(x, y, z, radius, instanceColor, density);
+    let radius, color, density;
+    const rand = Math.random(); // Generate one random number to decide the ball type
+
+    
+
+    // --- 50% chance for a Blue Ball ---
+    if (rand < 0.50) { 
+        // Lighter, smaller blue balls
+        radius = 0.08; 
+        density = 15; 
+        color = [0.2, 0.5, 1.0, 1.0]; // Blue
+    } 
+    
+    // --- 35% chance for a Red Ball ---
+    else if (rand < 0.85) { 
+        // Heavy, large red balls
+        radius =  0.12
+        density = 60;
+        color = [1.0, 0.2, 0.2, 1.0]; // Red
+    } 
+    
+    // --- 15% chance for a Green Ball ---
+    else { 
+        // Medium density, fast green balls
+        radius = 0.15
+        density = 60; // Medium density
+        color = [0.2, 1.0, 0.3, 1.0]; // Green
+    }
+
+    // Use the Ball class to create the physics object with the chosen properties
+    return new Ball(x, y, z, radius, color, density);
 }
 
 
@@ -175,7 +192,6 @@ function updateMouseState(deltaTime) {
 	
 	if (mouseState.hasMoved && deltaTime > 0) {
 		mouseState.velX = (mouseState.worldX - mouseState.lastWorldX) / deltaTime;
-        // No vertical mouse velocity needed for this interaction
 		mouseState.velZ = (mouseState.worldZ - mouseState.lastWorldZ) / deltaTime; 
 	}
 
@@ -193,10 +209,17 @@ function DrawScene()
 	
 	if (ballDrawer.numIndices > 0) { 
 		for (var i = 0; i < meshInstances.length ; i++) {
-			var inst = meshInstances[i];
-            // Access position from the Ball object's vec3 property
-			var transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
-			ballDrawer.draw(viewProjMatrix, viewMatrix, transM, inst.color, LIGHT_POSITION);
+			const inst = meshInstances[i];
+
+            // 1. Create translation matrix from the ball's position
+			const transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
+            // 2. Create scaling matrix from the ball's radius
+            const scaleM = ScalingMatrix(inst.radius, inst.radius, inst.radius);
+            // 3. Combine them into a single model matrix
+            const modelM = MatrixMult(transM, scaleM);
+            
+            // 4. Draw the ball using its unique properties and the calculated model matrix
+			ballDrawer.draw(viewProjMatrix, viewMatrix, modelM, inst.color, LIGHT_POSITION);
 		}
 	}
 	
