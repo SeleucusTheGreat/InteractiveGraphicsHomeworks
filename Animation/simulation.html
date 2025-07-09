@@ -10,14 +10,14 @@
         <label for="numInstancesInput">Number of balls:</label>
         <input type="number" id="numInstancesInput" value="300" min="1" max="1000" style="width: 60px;">
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
+        <label for="RESTITUTION">elasticity</label>
+        <input type="number" id="RESTITUTION" value="0.5" min="0.2" max="0.8" step="0.1" style="width: 60px;" oninput="UpdateRestitution()">
     </div>
-    <!-- START: Added UI for interaction modes -->
     <div style="margin-top: 5px;">
         <label>Interaction Mode:</label>
         <button id="btnPush" class="active-mode" onclick="setInteractionMode('push')">Push</button>
         <button id="btnTornado" onclick="setInteractionMode('tornado')">Tornado</button>
     </div>
-    <!-- END: Added UI -->
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
 </div>
@@ -42,6 +42,7 @@ var lastTime = 0;
 var viewProjMatrix; 
 var viewMatrix; 
 let currentInteractionMode = 'push'; // Global state for the current mode
+let RESTITUTION = 0.5; 
 
 const mouseState = {
     x: -1, y: -1,     
@@ -56,27 +57,42 @@ const GRAVITY = -9.8;
 const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const MOUSE_INTERACTION_RADIUS = 0.05; 
 const MOUSE_IMPULSE_MULTIPLIER = 0.05; 
-const RESTITUTION = 0.5;
 
-// --- START: Added Tornado Constants ---
+// --- Tornado Constants ---
 const TORNADO_RADIUS = 0.5;
 const TORNADO_PULL_STRENGTH = 30.0;
 const TORNADO_ROTATION_STRENGTH = 200.0;
 const TORNADO_LIFT_STRENGTH = 45.0;
-// --- END: Added Tornado Constants ---
 
 
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 3.0, 0.0];
 
-// --- START: Added Function to switch modes ---
+
 function setInteractionMode(mode) {
     currentInteractionMode = mode;
-    // Update button styles to show which is active
     document.getElementById('btnPush').classList.toggle('active-mode', mode === 'push');
     document.getElementById('btnTornado').classList.toggle('active-mode', mode === 'tornado');
 }
-// --- END: Added Function ---
+
+function UpdateRestitution() {
+    const restitutionInput = document.getElementById('RESTITUTION');
+    let value = parseFloat(restitutionInput.value);
+
+    // Validate the input to keep it within the desired range
+    const minVal = parseFloat(restitutionInput.min);
+    const maxVal = parseFloat(restitutionInput.max);
+    if (isNaN(value) || value < minVal) {
+        value = minVal;
+        restitutionInput.value = value;
+    }
+    if (value > maxVal) {
+        value = maxVal;
+        restitutionInput.value = value;
+    }
+    
+    RESTITUTION = value;
+}
 
 function ResetSimulation() {
     const numInstancesInput = document.getElementById('numInstancesInput');
@@ -263,7 +279,9 @@ function CompileShader( type, source )
 window.onload = function() {
 	InitWebGL();
     ResetSimulation();
-	
+    UpdateRestitution();
+ 
+    
     canvas.onmousemove = function(event) {
         const rect = canvas.getBoundingClientRect();
         mouseState.x = event.clientX - rect.left;
