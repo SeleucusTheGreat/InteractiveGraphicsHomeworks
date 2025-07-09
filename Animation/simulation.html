@@ -18,6 +18,11 @@
         <button id="btnPush" class="active-mode" onclick="setInteractionMode('push')">Push</button>
         <button id="btnTornado" onclick="setInteractionMode('tornado')">Tornado</button>
     </div>
+    <div style="margin-top: 5px;">
+        <label>Box Type:</label>
+        <button id="btnStandard" class="active-mode" onclick="setBoxType('standard')">Standard</button>
+        <button id="btnTall" onclick="setBoxType('tall')">Tall</button>
+    </div>
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
 </div>
@@ -54,9 +59,14 @@ const mouseState = {
 
 // --- Physics Constants ---
 const GRAVITY = -9.8; 
-const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
 const MOUSE_INTERACTION_RADIUS = 0.05; 
 const MOUSE_IMPULSE_MULTIPLIER = 0.05; 
+
+// --- Box Constants ---
+const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
+const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
+let currentBoxType = 'standard';
+let currentBoxBounds = BOX_BOUNDS_STANDARD;
 
 // --- Tornado Constants ---
 const TORNADO_RADIUS = 0.5;
@@ -73,6 +83,27 @@ function setInteractionMode(mode) {
     currentInteractionMode = mode;
     document.getElementById('btnPush').classList.toggle('active-mode', mode === 'push');
     document.getElementById('btnTornado').classList.toggle('active-mode', mode === 'tornado');
+}
+
+function setBoxType(type) {
+    currentBoxType = type;
+    if (type === 'standard') {
+        currentBoxBounds = BOX_BOUNDS_STANDARD;
+        rotX = 0;
+        rotY = 0;
+        transZ = 5;
+    } else { // 'tall'
+        currentBoxBounds = BOX_BOUNDS_TALL;
+        rotX = 0.6;   
+        rotY = 0.0;    
+        transZ = 15; 
+    }
+
+    // This needs to be called any time transZ changes to update the clipping planes
+    UpdateProjectionMatrix(); 
+    
+    document.getElementById('btnStandard').classList.toggle('active-mode', type === 'standard');
+    document.getElementById('btnTall').classList.toggle('active-mode', type === 'tall');
 }
 
 function UpdateRestitution() {
@@ -245,7 +276,7 @@ function DrawScene()
 		}
 	}
 	
-	boxDrawer.draw(viewProjMatrix);
+	boxDrawer.draw(viewProjMatrix, currentBoxType);
 }
 
 function InitShaderProgram( vsSource, fsSource )

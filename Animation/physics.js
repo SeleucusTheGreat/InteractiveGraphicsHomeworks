@@ -1,5 +1,3 @@
-
-
 function UpdatePhysics(deltaTime) {
     if (meshInstances.length === 0) return;
 
@@ -153,35 +151,35 @@ function handleInterObjectCollisions() {
 function handleBoxCollisions() {
     for (const ball of meshInstances) {
         // Bottom wall
-        if (ball.position[1] < -BOX_BOUNDS.y + ball.radius) {
-            ball.position[1] = -BOX_BOUNDS.y + ball.radius;
+        if (ball.position[1] < currentBoxBounds.y_bottom + ball.radius) {
+            ball.position[1] = currentBoxBounds.y_bottom + ball.radius;
             ball.velocity[1] *= -RESTITUTION;
         }
         // Top wall
-        if (ball.position[1] > BOX_BOUNDS.y - ball.radius) {
-            ball.position[1] = BOX_BOUNDS.y - ball.radius;
+        if (ball.position[1] > currentBoxBounds.y_top - ball.radius) {
+            ball.position[1] = currentBoxBounds.y_top - ball.radius;
             ball.velocity[1] *= -RESTITUTION;
         }
 
         // Left wall (-X)
-        if (ball.position[0] < -BOX_BOUNDS.x + ball.radius) {
-            ball.position[0] = -BOX_BOUNDS.x + ball.radius;
+        if (ball.position[0] < -currentBoxBounds.x + ball.radius) {
+            ball.position[0] = -currentBoxBounds.x + ball.radius;
             ball.velocity[0] *= -RESTITUTION;
         }
         // Right wall (+X)
-        if (ball.position[0] > BOX_BOUNDS.x - ball.radius) {
-            ball.position[0] = BOX_BOUNDS.x - ball.radius;
+        if (ball.position[0] > currentBoxBounds.x - ball.radius) {
+            ball.position[0] = currentBoxBounds.x - ball.radius;
             ball.velocity[0] *= -RESTITUTION;
         }
 
         // Back wall (-Z)
-        if (ball.position[2] < -BOX_BOUNDS.z + ball.radius) {
-            ball.position[2] = -BOX_BOUNDS.z + ball.radius;
+        if (ball.position[2] < -currentBoxBounds.z + ball.radius) {
+            ball.position[2] = -currentBoxBounds.z + ball.radius;
             ball.velocity[2] *= -RESTITUTION;
         }
         // Front wall (+Z)
-        if (ball.position[2] > BOX_BOUNDS.z - ball.radius) {
-            ball.position[2] = BOX_BOUNDS.z - ball.radius;
+        if (ball.position[2] > currentBoxBounds.z - ball.radius) {
+            ball.position[2] = currentBoxBounds.z - ball.radius;
             ball.velocity[2] *= -RESTITUTION;
         }
     }
