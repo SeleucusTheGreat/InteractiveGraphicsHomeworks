@@ -8,9 +8,16 @@
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
         <label for="numInstancesInput">Number of balls:</label>
-        <input type="number" id="numInstancesInput" value="100" min="1" max="1000" style="width: 60px;">
+        <input type="number" id="numInstancesInput" value="300" min="1" max="1000" style="width: 60px;">
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
     </div>
+    <!-- START: Added UI for interaction modes -->
+    <div style="margin-top: 5px;">
+        <label>Interaction Mode:</label>
+        <button id="btnPush" class="active-mode" onclick="setInteractionMode('push')">Push</button>
+        <button id="btnTornado" onclick="setInteractionMode('tornado')">Tornado</button>
+    </div>
+    <!-- END: Added UI -->
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
 </div>
@@ -34,6 +41,8 @@ var lastTime = 0;
 
 var viewProjMatrix; 
 var viewMatrix; 
+let currentInteractionMode = 'push'; // Global state for the current mode
+
 const mouseState = {
     x: -1, y: -1,     
     worldX: 0, worldY: 0, worldZ: 0,
@@ -45,13 +54,29 @@ const mouseState = {
 // --- Physics Constants ---
 const GRAVITY = -9.8; 
 const BOX_BOUNDS = { x: 2.0, y: 1.0, z: 2.0 }; 
-const PUSHSTRENGHT = 0.1
 const MOUSE_INTERACTION_RADIUS = 0.05; 
 const MOUSE_IMPULSE_MULTIPLIER = 0.05; 
-const RESTITUTION = 0.5; // Coefficient of bounciness. 1 = perfectly elastic, 0 = no bounce.
+const RESTITUTION = 0.5;
+
+// --- START: Added Tornado Constants ---
+const TORNADO_RADIUS = 0.5;
+const TORNADO_PULL_STRENGTH = 30.0;
+const TORNADO_ROTATION_STRENGTH = 200.0;
+const TORNADO_LIFT_STRENGTH = 45.0;
+// --- END: Added Tornado Constants ---
+
 
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 3.0, 0.0];
+
+// --- START: Added Function to switch modes ---
+function setInteractionMode(mode) {
+    currentInteractionMode = mode;
+    // Update button styles to show which is active
+    document.getElementById('btnPush').classList.toggle('active-mode', mode === 'push');
+    document.getElementById('btnTornado').classList.toggle('active-mode', mode === 'tornado');
+}
+// --- END: Added Function ---
 
 function ResetSimulation() {
     const numInstancesInput = document.getElementById('numInstancesInput');
@@ -83,35 +108,24 @@ function CreateInstance() {
     const z = (Math.random() - 0.5) * 3.8; 
 
     let radius, color, density;
-    const rand = Math.random(); // Generate one random number to decide the ball type
+    const rand = Math.random();
 
-    
-
-    // --- 50% chance for a Blue Ball ---
     if (rand < 0.50) { 
-        // Lighter, smaller blue balls
         radius = 0.08; 
-        density = 15; 
-        color = [0.2, 0.5, 1.0, 1.0]; // Blue
+        density = 35; 
+        color = [0.2, 0.5, 1.0, 1.0];
     } 
-    
-    // --- 35% chance for a Red Ball ---
     else if (rand < 0.85) { 
-        // Heavy, large red balls
         radius =  0.12
-        density = 60;
-        color = [1.0, 0.2, 0.2, 1.0]; // Red
+        density = 80;
+        color = [1.0, 0.2, 0.2, 1.0];
     } 
-    
-    // --- 15% chance for a Green Ball ---
     else { 
-        // Medium density, fast green balls
         radius = 0.15
-        density = 60; // Medium density
-        color = [0.2, 1.0, 0.3, 1.0]; // Green
+        density = 60;
+        color = [0.2, 1.0, 0.3, 1.0];
     }
 
-    // Use the Ball class to create the physics object with the chosen properties
     return new Ball(x, y, z, radius, color, density);
 }
 
@@ -156,7 +170,6 @@ function UpdateProjectionMatrix()
 	const f = (transZ + 5);
 	const fov = 3.145 * 60 / 180;
 	
-    // Use gl-matrix to create the perspective matrix
     mat4.perspective(perspectiveMatrix, fov, r, n, f);
 }
 
@@ -169,17 +182,14 @@ function updateMouseState(deltaTime) {
     const invMatrix = invertMatrix(viewProjMatrix);
     if (!invMatrix) return;
 
-    // Use gl-matrix to unproject mouse coordinates from screen space to world space
     const worldNear = vec3.create();
     const worldFar = vec3.create();
     vec3.transformMat4(worldNear, [ndcX, ndcY, -1.0], invMatrix);
     vec3.transformMat4(worldFar, [ndcX, ndcY, 1.0], invMatrix);
 
-	//solving the equation for y = -0.95 or the lower floor of the box
     const rayDirY = worldFar[1] - worldNear[1];
     if (Math.abs(rayDirY) < 0.0001) return; 
     const t = (-0.95 - worldNear[1]) / rayDirY; 
-
 
     const worldPos = vec3.create();
     const rayDir = vec3.create();
@@ -211,14 +221,10 @@ function DrawScene()
 		for (var i = 0; i < meshInstances.length ; i++) {
 			const inst = meshInstances[i];
 
-            // 1. Create translation matrix from the ball's position
 			const transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
-            // 2. Create scaling matrix from the ball's radius
             const scaleM = ScalingMatrix(inst.radius, inst.radius, inst.radius);
-            // 3. Combine them into a single model matrix
             const modelM = MatrixMult(transM, scaleM);
             
-            // 4. Draw the ball using its unique properties and the calculated model matrix
 			ballDrawer.draw(viewProjMatrix, viewMatrix, modelM, inst.color, LIGHT_POSITION);
 		}
 	}
@@ -256,9 +262,8 @@ function CompileShader( type, source )
 
 window.onload = function() {
 	InitWebGL();
-    ResetSimulation(); // Initialize the simulation with the default number of balls
+    ResetSimulation();
 	
-    // We only need to track mouse position when it moves over the canvas
     canvas.onmousemove = function(event) {
         const rect = canvas.getBoundingClientRect();
         mouseState.x = event.clientX - rect.left;
@@ -288,7 +293,6 @@ window.onload = function() {
 		}
 	}
 	canvas.onmouseup = canvas.onmouseleave = function(event) {
-        // Keep tracking mouse position on leave/up, just stop camera movement
         canvas.onmousemove = function(event) {
             const rect = canvas.getBoundingClientRect();
             mouseState.x = event.clientX - rect.left;
