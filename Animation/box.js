@@ -65,9 +65,9 @@ class BoxDrawer {
 		// Index buffer is the same for both boxes
 		this.linebuffer = gl.createBuffer();
 		var line = [
-			0,1,   1,3,   3,2,   2,0, // Bottom/Top face edges (or front/back depending on initial orientation)
-			4,5,   5,7,   7,6,   6,4, // Other face edges
-			0,4,   1,5,   3,7,   2,6,  // Connecting edges
+			0,1,   1,3,   3,2,   2,0, 
+			4,5,   5,7,   7,6,   6,4,
+			0,4,   1,5,   3,7,   2,6, 
 		];
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.linebuffer);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(line), gl.STATIC_DRAW);

@@ -41,12 +41,12 @@ var boxDrawer;
 var ballDrawer;
 var canvas, gl;
 var perspectiveMatrix = mat4.create();	
-var rotX=0, rotY=0, transZ=5 
+var rotX=0, rotY=0, transZ=5, transY=0; 
 var lastTime = 0; 
 
 var viewProjMatrix; 
 var viewMatrix; 
-let currentInteractionMode = 'push'; // Global state for the current mode
+let currentInteractionMode = 'push'; 
 let RESTITUTION = 0.5; 
 
 const mouseState = {
@@ -76,7 +76,7 @@ const TORNADO_LIFT_STRENGTH = 45.0;
 
 
 // --- Light Constants ---
-const LIGHT_POSITION = [0.0, 3.0, 0.0];
+const LIGHT_POSITION = [0.0, 10.0, 0.0];
 
 
 function setInteractionMode(mode) {
@@ -92,16 +92,16 @@ function setBoxType(type) {
         rotX = 0;
         rotY = 0;
         transZ = 5;
+        transY = 0; 
     } else { // 'tall'
         currentBoxBounds = BOX_BOUNDS_TALL;
         rotX = 0.6;   
         rotY = 0.0;    
         transZ = 15; 
+        transY = 4.5; 
     }
 
-    // This needs to be called any time transZ changes to update the clipping planes
-    UpdateProjectionMatrix(); 
-    
+    UpdateProjectionMatrix();  
     document.getElementById('btnStandard').classList.toggle('active-mode', type === 'standard');
     document.getElementById('btnTall').classList.toggle('active-mode', type === 'tall');
 }
@@ -131,7 +131,7 @@ function ResetSimulation() {
 
     // Basic validation to ensure the number is within reasonable bounds
     const minVal = parseInt(numInstancesInput.min, 10) || 1;
-    const maxVal = parseInt(numInstancesInput.max, 10) || 5000;
+    const maxVal = parseInt(numInstancesInput.max, 10) || 1000;
 
     if (isNaN(numToSpawn) || numToSpawn < minVal) {
         numToSpawn = minVal;
@@ -211,10 +211,10 @@ function UpdateCanvasSize()
 function UpdateProjectionMatrix()
 {
 	const r = canvas.width / canvas.height;
-	let n = (transZ - 5);
-	const min_n = 0.001;
+    let n = (transZ - 10);
+	const min_n = 0.1;
 	if ( n < min_n ) n = min_n;
-	const f = (transZ + 5);
+	const f = (transZ + 25);
 	const fov = 3.145 * 60 / 180;
 	
     mat4.perspective(perspectiveMatrix, fov, r, n, f);
@@ -260,9 +260,8 @@ function updateMouseState(deltaTime) {
 function DrawScene()
 {
 	if (!ballDrawer || !boxDrawer) return;
-
-	viewMatrix = ViewMatrix( 0, 0, transZ, rotX, rotY )
-	viewProjMatrix = ViewProjectionMatrix( perspectiveMatrix, 0, 0, transZ, rotX, rotY );
+	viewMatrix = ViewMatrix( 0, -transY, transZ, rotX, rotY )
+	viewProjMatrix = ViewProjectionMatrix( perspectiveMatrix, 0, -transY, transZ, rotX, rotY );
 	
 	if (ballDrawer.numIndices > 0) { 
 		for (var i = 0; i < meshInstances.length ; i++) {

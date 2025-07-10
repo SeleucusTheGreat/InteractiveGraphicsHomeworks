@@ -111,7 +111,7 @@ function handleInterObjectCollisions() {
                 const dist = Math.sqrt(distSq);
                 glMatrix.vec3.normalize(collisionNormal, collisionNormal);
 
-                // --- Positional Correction (to prevent sticking) ---
+                //Positional Correction (to prevent sticking) ---
                 const overlap = totalRadius - dist;
                 const totalInvMass = inst1.invMass + inst2.invMass;
                 if (totalInvMass > 0) {
@@ -121,23 +121,23 @@ function handleInterObjectCollisions() {
                     glMatrix.vec3.scaleAndAdd(inst2.position, inst2.position, collisionNormal, -correctionAmount * inst2.invMass);
                 }
 
-                //Impulse Resolution (handles velocity change)
+                //Impulse Resolution 
                 
                 glMatrix.vec3.subtract(relativeVelocity, inst1.velocity, inst2.velocity);
 
                 //velocity along the normal
                 const velAlongNormal = glMatrix.vec3.dot(relativeVelocity, collisionNormal);
 
-                // 3. Do not resolve if velocities are separating
+                //Do not resolve if velocities are separating
                 if (velAlongNormal > 0) {
                     continue;
                 }
 
-                // 4. Calculate impulse scalar (j)
+                //Calculate impulse scalar
                 const j = -(1 + RESTITUTION) * velAlongNormal / totalInvMass;
             
 
-                // 5. Apply impulse vector
+                //Apply impulse vector
                 glMatrix.vec3.scale(impulseVec, collisionNormal, j);
 
                 glMatrix.vec3.scaleAndAdd(inst1.velocity, inst1.velocity, impulseVec, inst1.invMass);

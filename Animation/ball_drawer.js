@@ -147,8 +147,8 @@ class BallDrawer
 
         // Set uniforms
         gl.uniformMatrix4fv(this.mvp , false, mvp);
-        gl.uniformMatrix4fv(this.mv, false, mv); // Still passing this, though unused in shader
-        gl.uniformMatrix4fv(this.model ,false, modelMatrix); // Use the new 'model' uniform
+        gl.uniformMatrix4fv(this.mv, false, mv); 
+        gl.uniformMatrix4fv(this.model ,false, modelMatrix); 
         gl.uniform4fv(this.colorUniformLoc, color);
         gl.uniform3fv(this.lightPosUniformLoc, lightPos);
 

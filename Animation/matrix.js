@@ -33,6 +33,13 @@ function ScalingMatrix(sx, sy, sz) {
     return out;
 }
 
+function LookAtMatrix(eye, center, up) {
+    const out = mat4.create();
+    mat4.lookAt(out, eye, center, up);
+    return out;
+}
+
+
 function ViewMatrix( translationX, translationY, translationZ, rotationX, rotationY ) {
     const translateMatrix = TranslationMatrix(translationX, translationY, -translationZ);
     const rotYMatrix = RotationYMatrix(rotationY);
