@@ -1,5 +1,5 @@
 class Ball {
-    constructor(x, y, z, radius, color, density) {
+    constructor(x, y, z, radius, color, density, ballType) {
 
         this.position = glMatrix.vec3.fromValues(x, y, z);
         this.velocity = glMatrix.vec3.create(); //[0, 0, 0]
@@ -7,6 +7,7 @@ class Ball {
 
         this.radius = radius;
         this.color = color;
+        this.ballType = ballType;
         
         const DENSITY = density; 
         const volume = (4/3) * Math.PI * Math.pow(this.radius, 3);

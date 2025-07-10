@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body onresize="WindowResize()">
+<!-- MODIFIED: Added file inputs to the control panel -->
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
         <label for="numInstancesInput">Number of balls:</label>
@@ -22,6 +23,22 @@
         <label>Box Type:</label>
         <button id="btnStandard" class="active-mode" onclick="setBoxType('standard')">Standard</button>
         <button id="btnTall" onclick="setBoxType('tall')">Tall</button>
+    </div>
+    <!-- ADDED: Texture loading section -->
+    <div style="margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
+        <label>Load Textures:</label>
+        <div>
+            <label for="texSmall">Small Ball (Blue):</label>
+            <input type="file" id="texSmall" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'small')">
+        </div>
+        <div>
+            <label for="texMedium">Medium Ball (Red):</label>
+            <input type="file" id="texMedium" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'medium')">
+        </div>
+        <div>
+            <label for="texLarge">Large Ball (Green):</label>
+            <input type="file" id="texLarge" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'large')">
+        </div>
     </div>
 </div>
 <div id="canvas-div"><canvas id="canvas"></canvas></div>
@@ -55,6 +72,12 @@ const mouseState = {
     velX: 0, velY: 0, velZ: 0,
     lastWorldX: 0, lastWorldY: 0, lastWorldZ: 0,
     hasMoved: false
+};
+
+const BALL_TEXTURES = {
+    small: 'ball_texture_1.png',
+    medium: 'ball_texture_2.png',
+    large: 'ball_texture_3.png'
 };
 
 // --- Physics Constants ---
@@ -146,27 +169,31 @@ function CreateInstance() {
     const y = (Math.random() * 0.9) + 0.1;   
     const z = (Math.random() - 0.5) * 3.8; 
 
-    let radius, color, density;
+    let radius, color, density, ballType;
     const rand = Math.random();
 
     if (rand < 0.50) { 
         radius = 0.08; 
         density = 35; 
-        color = [0.2, 0.5, 1.0, 1.0];
+        color = [0.2, 0.5, 1.0, 1.0]; // Blue
+        ballType = 'small';
     } 
     else if (rand < 0.85) { 
         radius =  0.12
         density = 80;
-        color = [1.0, 0.2, 0.2, 1.0];
+        color = [1.0, 0.2, 0.2, 1.0]; // Red
+        ballType = 'medium';
     } 
     else { 
         radius = 0.15
-        density = 60;
-        color = [0.2, 1.0, 0.3, 1.0];
+        density = 150;
+        color = [0.2, 1.0, 0.3, 1.0]; // Green
+        ballType = 'large';
     }
 
-    return new Ball(x, y, z, radius, color, density);
+    return new Ball(x, y, z, radius, color, density, ballType);
 }
+
 
 
 function InitWebGL()
@@ -255,21 +282,28 @@ function DrawScene()
 	viewMatrix = ViewMatrix( 0, -transY, transZ, rotX, rotY )
 	viewProjMatrix = ViewProjectionMatrix( perspectiveMatrix, 0, -transY, transZ, rotX, rotY );
 	
-	if (ballDrawer.numIndices > 0) { 
-		for (var i = 0; i < meshInstances.length ; i++) {
-			const inst = meshInstances[i];
+    gl.activeTexture(gl.TEXTURE0);
 
-			const transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
-            const scaleM = ScalingMatrix(inst.radius, inst.radius, inst.radius);
-            const modelM = MatrixMult(transM, scaleM);
-            
-			ballDrawer.draw(viewProjMatrix, viewMatrix, modelM, inst.color, LIGHT_POSITION);
-		}
-	}
+    for (const typeName in {small:1, medium:1, large:1}) { 
+        const useTexture = ballDrawer.texturesReady[typeName] || false;
+        
+        if (useTexture) {
+            gl.bindTexture(gl.TEXTURE_2D, ballDrawer.textures[typeName]);
+        }
+        for (const inst of meshInstances) {
+            if (inst.ballType === typeName) {
+                const transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
+                const scaleM = ScalingMatrix(inst.radius, inst.radius, inst.radius);
+                const modelM = MatrixMult(transM, scaleM);
+                
+                // Pass the 'useTexture' boolean to the draw call.
+                ballDrawer.draw(viewProjMatrix, viewMatrix, modelM, inst.color, LIGHT_POSITION, useTexture);
+            }
+        }
+    }
 	
 	boxDrawer.draw(viewProjMatrix, currentBoxType);
 }
-
 function InitShaderProgram( vsSource, fsSource )
 {
 	const vs = CompileShader( gl.VERTEX_SHADER,   vsSource );
@@ -355,7 +389,19 @@ function Animate(currentTime) {
     UpdatePhysics(deltaTime);
     DrawScene();
 }
-
+function loadTextureFromFile(event, ballType) {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // The result is a data URL (e.g., "data:image/png;base64,iVBORw0KGgo...")
+        const imageUrl = e.target.result;
+        ballDrawer.loadSingleTexture(imageUrl, ballType);
+    };
+    reader.readAsDataURL(file);
+}
 </script>
 </body>
 </html>

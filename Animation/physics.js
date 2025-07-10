@@ -32,7 +32,7 @@ function handleMouseInteraction(deltaTime) {
 
 // "Push" mode uses the original impulse-based logic
 function handlePushInteraction(deltaTime) {
-    const impulse = glMatrix.vec3.create(); // Create vector once
+    const impulse = glMatrix.vec3.create(); 
     const MOUSE_IMPULSE_MULTIPLIER = 0.10; 
     const MOUSE_INTERACTION_RADIUS = 0.05; 
     for (const ball of meshInstances) {
@@ -159,7 +159,6 @@ function handleInterObjectCollisions() {
 
                 //Apply impulse vector
                 glMatrix.vec3.scale(impulseVec, collisionNormal, j);
-
                 glMatrix.vec3.scaleAndAdd(inst1.velocity, inst1.velocity, impulseVec, inst1.invMass);
                 glMatrix.vec3.scaleAndAdd(inst2.velocity, inst2.velocity, impulseVec, -inst2.invMass);
             }
