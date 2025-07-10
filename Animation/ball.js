@@ -2,8 +2,8 @@ class Ball {
     constructor(x, y, z, radius, color, density) {
 
         this.position = glMatrix.vec3.fromValues(x, y, z);
-        this.velocity = glMatrix.vec3.create(); // Starts at [0, 0, 0]
-        this.acceleration = glMatrix.vec3.create(); // Starts at [0, 0, 0]
+        this.velocity = glMatrix.vec3.create(); //[0, 0, 0]
+        this.acceleration = glMatrix.vec3.create(); //[0, 0, 0]
 
         this.radius = radius;
         this.color = color;
@@ -15,20 +15,20 @@ class Ball {
     }
 
     // F=ma => a = F/m
-    applyForce(force) {
-        const forceVec = glMatrix.vec3.fromValues(force.x, force.y, force.z);
+    applyForce(forceVec) {
         glMatrix.vec3.scaleAndAdd(this.acceleration, this.acceleration, forceVec, this.invMass);
     }
 
     applygravity() {
-        // Apply gravity only on the Y axis
         this.acceleration[1] += GRAVITY;
     }
+
+    applyAcceleration(accVec) {
+        glMatrix.vec3.add(this.acceleration, this.acceleration, accVec);
+    }
     
-    
-    // delta_v = J / m = J * invMass
-    applyImpulse(impulse) {
-        const impulseVec = glMatrix.vec3.fromValues(impulse.x, impulse.y, impulse.z);
+    // velocity  = J * 1/Mass
+    applyImpulse(impulseVec) { 
         glMatrix.vec3.scaleAndAdd(this.velocity, this.velocity, impulseVec, this.invMass);
     }
 

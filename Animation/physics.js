@@ -32,6 +32,9 @@ function handleMouseInteraction(deltaTime) {
 
 // "Push" mode uses the original impulse-based logic
 function handlePushInteraction(deltaTime) {
+    const impulse = glMatrix.vec3.create(); // Create vector once
+    const MOUSE_IMPULSE_MULTIPLIER = 0.10; 
+    const MOUSE_INTERACTION_RADIUS = 0.05; 
     for (const ball of meshInstances) {
         const dx = ball.position[0] - mouseState.worldX;
         const dy = ball.position[1] - (-0.95); 
@@ -45,47 +48,64 @@ function handlePushInteraction(deltaTime) {
             const impulseX = mouseState.velX * MOUSE_IMPULSE_MULTIPLIER;
             const impulseY = (mouseState.velX + mouseState.velZ) * MOUSE_IMPULSE_MULTIPLIER * 0.5;
             const impulseZ = mouseState.velZ * MOUSE_IMPULSE_MULTIPLIER;
-            ball.applyImpulse({ x: impulseX, y: impulseY, z: impulseZ });
+            
+            // Set the values of the impulse vector
+            glMatrix.vec3.set(impulse, impulseX, impulseY, impulseZ);
+            ball.applyImpulse(impulse); // Pass the glMatrix vector
         }
     }
 }
 
-// "Tornado" mode applies continuous forces to create a vortex
+
 function handleTornadoInteraction(deltaTime) {
-    const mouseWorldPos = glMatrix.vec3.fromValues(mouseState.worldX, mouseState.worldY, mouseState.worldZ);
-    const toCenterVec = glMatrix.vec3.create();
-    const upVector = glMatrix.vec3.fromValues(0, 1, 0);
-    const tangentialVec = glMatrix.vec3.create();
+    // --- Constants ---
+    const TORNADO_RADIUS = 1.5;
+    const TORNADO_PULL_STRENGTH = 100.0;    
+    const TORNADO_ROTATION_STRENGTH = 2.0; 
+    const TORNADO_LIFT_STRENGTH = 10.0;  
+
+    // --- State ---
+    const tornadoCenterX = mouseState.worldX;
+    const tornadoCenterZ = mouseState.worldZ;
+
+    // --forces vectors--
+    const totalForce = glMatrix.vec3.create();
+    const pullForce = glMatrix.vec3.create();
+    const rotationForce = glMatrix.vec3.create();
+    const liftForce = glMatrix.vec3.create();
 
     for (const ball of meshInstances) {
-        glMatrix.vec3.subtract(toCenterVec, mouseWorldPos, ball.position);
-        
-        // We measure distance on the XZ plane to create a cylindrical area of effect
-        const distOnPlane = Math.sqrt(toCenterVec[0]*toCenterVec[0] + toCenterVec[2]*toCenterVec[2]);
+        const ballPos = ball.position;
+        const dx = ballPos[0] - tornadoCenterX;
+        const dz = ballPos[2] - tornadoCenterZ;
+        const distanceSq = dx * dx + dz * dz;
+        const distance = Math.sqrt(distanceSq);
 
-        if (distOnPlane > 0.01 && distOnPlane < TORNADO_RADIUS) {
-            
-            // Forces are stronger closer to the center and weaker at the edge
-            const falloff = 1.0 - (distOnPlane / TORNADO_RADIUS);
+        // Check if the ball is within the tornado's cylinder
+        if (distance <= TORNADO_RADIUS) {
+            const liftFalloff = 1.0 - (distance / TORNADO_RADIUS);
+            glMatrix.vec3.zero(totalForce); 
 
-            // --- 1. Inward Pull Force ---
-            const pullForce = glMatrix.vec3.clone(toCenterVec);
-            glMatrix.vec3.normalize(pullForce, pullForce); // Get direction
-            const pullMagnitude = TORNADO_PULL_STRENGTH * falloff;
-            glMatrix.vec3.scale(pullForce, pullForce, pullMagnitude);
-            ball.applyForce({ x: pullForce[0], y: pullForce[1], z: pullForce[2] });
+            // --- pull in forces --- 
+            const pullDir = glMatrix.vec3.fromValues(-dx, 0, -dz);
+            glMatrix.vec3.normalize(pullDir, pullDir);
+            glMatrix.vec3.scale(pullForce, pullDir, TORNADO_PULL_STRENGTH*liftFalloff);
+            glMatrix.vec3.add(totalForce, totalForce, pullForce);
 
-            // --- 2. Rotational (Tangential) Force ---
-            // Cross product of "up" and "to center" gives a perpendicular vector for rotation
-            glMatrix.vec3.cross(tangentialVec, upVector, toCenterVec);
-            glMatrix.vec3.normalize(tangentialVec, tangentialVec); // Get direction
-            const rotationMagnitude = TORNADO_ROTATION_STRENGTH * falloff;
-            glMatrix.vec3.scale(tangentialVec, tangentialVec, rotationMagnitude);
-            ball.applyForce({ x: tangentialVec[0], y: tangentialVec[1], z: tangentialVec[2] });
 
-            // --- 3. Lift Force ---
-            // A simple upward force to make the balls rise into the vortex
-            ball.applyForce({ x: 0, y: TORNADO_LIFT_STRENGTH, z: 0 });
+            // ---- rotation forces ---
+            const rotationDir = glMatrix.vec3.fromValues(-dz, 0, dx);
+            glMatrix.vec3.normalize(rotationDir, rotationDir);
+            glMatrix.vec3.scale(rotationForce, rotationDir, TORNADO_ROTATION_STRENGTH*liftFalloff);
+            glMatrix.vec3.add(totalForce, totalForce, rotationForce);
+
+
+            // --- lift forces ---
+            glMatrix.vec3.scale(liftForce, [0, 1, 0], TORNADO_LIFT_STRENGTH * liftFalloff);
+            glMatrix.vec3.add(totalForce, totalForce, liftForce);
+
+            //--- combine them all ---
+            ball.applyForce(totalForce);
         }
     }
 }
