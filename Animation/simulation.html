@@ -11,8 +11,10 @@
         <label for="numInstancesInput">Number of balls:</label>
         <input type="number" id="numInstancesInput" value="300" min="1" max="1000" style="width: 60px;">
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
-        <label for="RESTITUTION">elasticity</label>
+        <label for="RESTITUTION">Collision Elasticity</label>
         <input type="number" id="RESTITUTION" value="0.5" min="0.2" max="0.8" step="0.1" style="width: 60px;" oninput="UpdateRestitution()">
+        <label for="FLOOR_FRICTION_DAMPING">Floor Attrition</label>
+        <input type="number" id="FLOOR_FRICTION_DAMPING" value="1.0" min="0.2" max="4.0" step="0.1" style="width: 60px;" oninput="UpdateAttrition()">
     </div>
     <div style="margin-top: 5px;">
         <label>Interaction Mode:</label>
@@ -63,8 +65,7 @@ var lastTime = 0;
 
 var viewProjMatrix; 
 var viewMatrix; 
-let currentInteractionMode = 'push'; 
-let RESTITUTION = 0.5; 
+let currentInteractionMode = 'push';  
 
 const mouseState = {
     x: -1, y: -1,     
@@ -82,7 +83,9 @@ const BALL_TEXTURES = {
 
 // --- Physics Constants ---
 const GRAVITY = -9.8; 
-
+const FLOOR_CONTACT_THRESHOLD = 0.01;
+let RESTITUTION = 0.5;
+let FLOOR_FRICTION_DAMPING = 1.0;
 // --- Box Constants ---
 const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
 const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
@@ -140,6 +143,25 @@ function UpdateRestitution() {
     RESTITUTION = value;
 }
 
+function UpdateAttrition() {
+    const attritionInput = document.getElementById('FLOOR_FRICTION_DAMPING');
+    let value = parseFloat(attritionInput.value);
+
+    // Validate the input to keep it within the desired range
+    const minVal = parseFloat(attritionInput.min);
+    const maxVal = parseFloat(attritionInput.max);
+    if (isNaN(value) || value < minVal) {
+        value = minVal;
+        attritionInput.value = value;
+    }
+    if (value > maxVal) {
+        value = maxVal;
+        attritionInput.value = value;
+    }
+    
+    FLOOR_FRICTION_DAMPING = value;
+}
+
 function ResetSimulation() {
     const numInstancesInput = document.getElementById('numInstancesInput');
     let numToSpawn = parseInt(numInstancesInput.value, 10);
@@ -180,13 +202,13 @@ function CreateInstance() {
     } 
     else if (rand < 0.85) { 
         radius =  0.12
-        density = 80;
+        density = 60;
         color = [1.0, 0.2, 0.2, 1.0]; // Red
         ballType = 'medium';
     } 
     else { 
         radius = 0.15
-        density = 150;
+        density = 90;
         color = [0.2, 1.0, 0.3, 1.0]; // Green
         ballType = 'large';
     }

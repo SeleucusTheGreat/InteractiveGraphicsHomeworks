@@ -3,6 +3,7 @@ function UpdatePhysics(deltaTime) {
 
     
     handleGravity();
+    handleDampingAndFriction()
     handleInterObjectCollisions();
     handleMouseInteraction(deltaTime); 
     handleBoxCollisions();
@@ -10,6 +11,22 @@ function UpdatePhysics(deltaTime) {
     
     for (const ball of meshInstances) {
         ball.update(deltaTime);
+    }
+}
+
+function handleDampingAndFriction() {
+    const dampingForce = glMatrix.vec3.create();
+    
+
+    for (const ball of meshInstances) {
+
+        
+        if (ball.position[1] <= currentBoxBounds.y_bottom + ball.radius + FLOOR_CONTACT_THRESHOLD) {
+            const floorFrictionForce = glMatrix.vec3.fromValues(ball.velocity[0], 0, ball.velocity[2]);
+            glMatrix.vec3.scale(floorFrictionForce, floorFrictionForce, -FLOOR_FRICTION_DAMPING);
+            ball.applyForce(floorFrictionForce);
+
+        }
     }
 }
 
