@@ -6,12 +6,11 @@ var boxVS = `
 		gl_Position = mvp * vec4(pos,1);
 	}
 `;
-// Fragment shader source code
 var boxFS = `
 	precision mediump float;
 	void main()
 	{
-		gl_FragColor = vec4(1,1,1,1); // White color
+		gl_FragColor = vec4(1,1,1,1); 
 	}
 `;
 
@@ -19,16 +18,13 @@ var boxFS = `
 class BoxDrawer {
 	constructor()
 	{
-		// Compile the shader program
 		this.prog = InitShaderProgram( boxVS, boxFS );
 		
 		// Get the ids of the uniform variables in the shaders
 		this.mvp = gl.getUniformLocation( this.prog, 'mvp' );
-		
-		// Get the ids of the vertex attributes in the shaders
+
+		// Get the id of the vertex position attribute
 		this.vertPos = gl.getAttribLocation( this.prog, 'pos' );
-		
-		// --- Create vertex data for both boxes ---
 		this.vertexBuffers = {};
 
 		// Standard Box Vertices
@@ -75,8 +71,6 @@ class BoxDrawer {
 		this.vertexBuffers.pool = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffers.pool);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posPool), gl.STATIC_DRAW);
-
-		// Index buffer is the same for both boxes
 		this.linebuffer = gl.createBuffer();
 		var line = [
 			0,1,   1,3,   3,2,   2,0, 
@@ -92,13 +86,14 @@ class BoxDrawer {
 		gl.useProgram( this.prog );
 		gl.uniformMatrix4fv( this.mvp, false, trans ); // Pass the MVP matrix
 		
-		// Bind the correct vertex buffer based on the selected box type
+		// draw the vertices for the specified box type
 		const bufferToUse = this.vertexBuffers[boxType] || this.vertexBuffers.standard;
 		gl.bindBuffer( gl.ARRAY_BUFFER, bufferToUse );
-		
-		gl.vertexAttribPointer( this.vertPos, 3, gl.FLOAT, false, 0, 0 ); // Define how 'pos' is read
-		gl.enableVertexAttribArray( this.vertPos ); // Enable the 'pos' attribute
+		gl.vertexAttribPointer( this.vertPos, 3, gl.FLOAT, false, 0, 0 );
+		gl.enableVertexAttribArray( this.vertPos );
+
+		// Draw the lines
 		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.linebuffer );
-		gl.drawElements( gl.LINES, 24, gl.UNSIGNED_BYTE, 0 ); // Draw 12 lines (24 indices)
+		gl.drawElements( gl.LINES, 24, gl.UNSIGNED_BYTE, 0 ); 
 	}
 }

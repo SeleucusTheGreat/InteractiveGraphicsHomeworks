@@ -230,7 +230,7 @@ function InitWebGL()
 {
 	canvas = document.getElementById("canvas");
 	canvas.oncontextmenu = function() {return false;};
-	gl = canvas.getContext("webgl", {antialias: false, depth: true});	
+	gl = canvas.getContext("webgl", {antialias: true, depth: true});	
 	if (!gl) {
 		alert("Unable to initialize WebGL. Your browser or machine may not support it.");
 		return;
@@ -322,11 +322,10 @@ function DrawScene()
         }
         for (const inst of meshInstances) {
             if (inst.ballType === typeName) {
-                const transM = TranslationMatrix(inst.position[0], inst.position[1], inst.position[2]); 
-                const scaleM = ScalingMatrix(inst.radius, inst.radius, inst.radius);
-                const modelM = MatrixMult(transM, scaleM);
+                const modelM = glMatrix.mat4.create();
+                glMatrix.mat4.fromTranslation(modelM, inst.position);
+                glMatrix.mat4.scale(modelM, modelM, [inst.radius, inst.radius, inst.radius]);
                 
-                // Pass the 'useTexture' boolean to the draw call.
                 ballDrawer.draw(viewProjMatrix, viewMatrix, modelM, inst.color, LIGHT_POSITION, useTexture);
             }
         }
@@ -426,7 +425,6 @@ function loadTextureFromFile(event, ballType) {
     }
     const reader = new FileReader();
     reader.onload = function(e) {
-        // The result is a data URL (e.g., "data:image/png;base64,iVBORw0KGgo...")
         const imageUrl = e.target.result;
         ballDrawer.loadSingleTexture(imageUrl, ballType);
     };

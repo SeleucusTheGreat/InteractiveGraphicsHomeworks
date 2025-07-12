@@ -39,7 +39,6 @@ function handleGravity () {
 
 function handleMouseInteraction(deltaTime) {
     if (!mouseState.hasMoved) return;
-
     if (currentInteractionMode === 'push') {
         handlePushInteraction(deltaTime);
     } else if (currentInteractionMode === 'tornado') {

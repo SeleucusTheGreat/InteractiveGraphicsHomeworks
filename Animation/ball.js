@@ -35,10 +35,10 @@ class Ball {
 
 
     update(deltaTime) {
-        // Update velocity from acceleration: v += a * dt
+        //v += a * dt
         glMatrix.vec3.scaleAndAdd(this.velocity, this.velocity, this.acceleration, deltaTime);
 
-        // Update position from velocity: p += v * dt
+        // p += v * dt
         glMatrix.vec3.scaleAndAdd(this.position, this.position, this.velocity, deltaTime);
 
         // clear accellerations

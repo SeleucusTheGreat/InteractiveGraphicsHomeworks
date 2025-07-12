@@ -26,11 +26,11 @@ const FragmentShader = `
     varying vec3 v_fragPos;
     varying vec2 v_texCoord;
 
-    uniform vec4 u_color;      // The ball's default solid color
+    uniform vec4 u_color;  
     uniform vec3 u_lightPos;   
     uniform vec3 u_viewPos;    
     uniform sampler2D u_sampler;
-    uniform bool u_useTexture; // ADDED: A flag to switch between color and texture
+    uniform bool u_useTexture; 
 
     void main() {
         vec3 baseColor;
@@ -72,7 +72,7 @@ class BallDrawer
     {
         this.prog = InitShaderProgram( VertexShader, FragmentShader );
 
-        // ... (Attribute locations are the same)
+
         this.posAttribLoc = gl.getAttribLocation( this.prog, 'a_position' );
         this.normAttribLoc = gl.getAttribLocation( this.prog, 'a_normal' );
         this.texCoordAttribLoc = gl.getAttribLocation(this.prog, 'a_texCoord');
@@ -84,9 +84,9 @@ class BallDrawer
         this.colorUniformLoc = gl.getUniformLocation( this.prog, 'u_color' );
         this.lightPosUniformLoc = gl.getUniformLocation( this.prog, 'u_lightPos' );
         this.samplerLoc = gl.getUniformLocation(this.prog, 'u_sampler');
-        this.useTextureLoc = gl.getUniformLocation(this.prog, 'u_useTexture'); // ADDED
+        this.useTextureLoc = gl.getUniformLocation(this.prog, 'u_useTexture');
 
-        // ... (The rest of the constructor is unchanged from the previous "file input" answer)
+        //buffers setup
         const { vertices, indices, normals, texCoords } = this.createSphereData(1.0, 16, 16);
         this.numIndices = indices.length;
         this.vertBuffer = gl.createBuffer();
@@ -103,7 +103,7 @@ class BallDrawer
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
         this.textures = {}; 
         this.texturesReady = {};
-    }
+    } 
 
     draw( mvp, mv , modelMatrix, color, lightPos, useTexture )
     {
@@ -120,7 +120,7 @@ class BallDrawer
         gl.uniform1i(this.samplerLoc, 0); 
         gl.uniform1i(this.useTextureLoc, useTexture ? 1 : 0); 
 
-        // Bind attributes (this code is identical to before)
+        // Bind attributes
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.vertexAttribPointer(this.posAttribLoc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.posAttribLoc);
@@ -175,5 +175,5 @@ class BallDrawer
         }
         return { vertices, indices, normals, texCoords };
     }
-    setTexture( img ) {}
+    
 }
