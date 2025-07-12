@@ -25,8 +25,8 @@
         <label>Box Type:</label>
         <button id="btnStandard" class="active-mode" onclick="setBoxType('standard')">Standard</button>
         <button id="btnTall" onclick="setBoxType('tall')">Tall</button>
+        <button id="btnPool" onclick="setBoxType('pool')">Pool</button>
     </div>
-    <!-- ADDED: Texture loading section -->
     <div style="margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
         <label>Load Textures:</label>
         <div>
@@ -89,6 +89,7 @@ let FLOOR_FRICTION_DAMPING = 1.0;
 // --- Box Constants ---
 const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
 const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
+const BOX_BOUNDS_POOL = { x: 4.0, y_bottom: -1.0, y_top: 0.0, z: 4.0 };
 let currentBoxType = 'standard';
 let currentBoxBounds = BOX_BOUNDS_STANDARD;
 
@@ -111,17 +112,24 @@ function setBoxType(type) {
         rotY = 0;
         transZ = 5;
         transY = 0; 
-    } else { // 'tall'
+    } else if (type === 'tall') {
         currentBoxBounds = BOX_BOUNDS_TALL;
         rotX = 0.6;   
         rotY = 0.0;    
         transZ = 15; 
         transY = 4.5; 
+    } else { // 'pool'
+        currentBoxBounds = BOX_BOUNDS_POOL;
+        rotX = 0.4;   
+        rotY = 0.0;    
+        transZ = 12;  
+        transY = 0;   
     }
 
     UpdateProjectionMatrix();  
     document.getElementById('btnStandard').classList.toggle('active-mode', type === 'standard');
     document.getElementById('btnTall').classList.toggle('active-mode', type === 'tall');
+    document.getElementById('btnPool').classList.toggle('active-mode', type === 'pool');
 }
 
 function UpdateRestitution() {

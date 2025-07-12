@@ -61,6 +61,20 @@ class BoxDrawer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffers.tall);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posTall), gl.STATIC_DRAW);
 
+		
+		const posPool = [
+			-4, -1, -4, // 0
+			-4, -1,  4, // 1
+			-4,  0, -4, // 2
+			-4,  0,  4, // 3
+			 4, -1, -4, // 4
+			 4, -1,  4, // 5
+			 4,  0, -4, // 6
+			 4,  0,  4  // 7
+		];
+		this.vertexBuffers.pool = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffers.pool);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posPool), gl.STATIC_DRAW);
 
 		// Index buffer is the same for both boxes
 		this.linebuffer = gl.createBuffer();
