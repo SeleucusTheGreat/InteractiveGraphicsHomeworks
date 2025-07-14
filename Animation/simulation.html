@@ -1,11 +1,9 @@
-<!doctype html>
 <html>
 <head>
 <title>WebGL Physics Spheres</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body onresize="WindowResize()">
-<!-- MODIFIED: Added file inputs to the control panel -->
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
         <label for="numInstancesInput">Number of balls:</label>
@@ -20,11 +18,13 @@
         <label>Interaction Mode:</label>
         <button id="btnPush" class="active-mode" onclick="setInteractionMode('push')">Push</button>
         <button id="btnTornado" onclick="setInteractionMode('tornado')">Tornado</button>
+        <button id="btnVortex" onclick="setInteractionMode('vortex')">Vortex</button>
     </div>
     <div style="margin-top: 5px;">
         <label>Box Type:</label>
         <button id="btnStandard" class="active-mode" onclick="setBoxType('standard')">Standard</button>
         <button id="btnTall" onclick="setBoxType('tall')">Tall</button>
+        <button id="btnTiny" onclick="setBoxType('tiny')">Tiny</button>
         <button id="btnPool" onclick="setBoxType('pool')">Pool</button>
     </div>
     <div style="margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
@@ -90,6 +90,7 @@ let FLOOR_FRICTION_DAMPING = 1.0;
 const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
 const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
 const BOX_BOUNDS_POOL = { x: 4.0, y_bottom: -1.0, y_top: 0.0, z: 4.0 };
+const BOX_BOUNDS_TINY = { x: 1.0, y_bottom: -1.0, y_top: 4.5, z: 1.0 };
 let currentBoxType = 'standard';
 let currentBoxBounds = BOX_BOUNDS_STANDARD;
 
@@ -102,6 +103,7 @@ function setInteractionMode(mode) {
     currentInteractionMode = mode;
     document.getElementById('btnPush').classList.toggle('active-mode', mode === 'push');
     document.getElementById('btnTornado').classList.toggle('active-mode', mode === 'tornado');
+    document.getElementById('btnVortex').classList.toggle('active-mode', mode === 'vortex');
 }
 
 function setBoxType(type) {
@@ -118,6 +120,12 @@ function setBoxType(type) {
         rotY = 0.0;    
         transZ = 15; 
         transY = 4.5; 
+    } else if (type === 'tiny') {
+        currentBoxBounds = BOX_BOUNDS_TINY;
+        rotX = 0.5;
+        rotY = 0.0;
+        transZ = 8;
+        transY = 2.0;
     } else { // 'pool'
         currentBoxBounds = BOX_BOUNDS_POOL;
         rotX = 0.4;   
@@ -129,6 +137,7 @@ function setBoxType(type) {
     UpdateProjectionMatrix();  
     document.getElementById('btnStandard').classList.toggle('active-mode', type === 'standard');
     document.getElementById('btnTall').classList.toggle('active-mode', type === 'tall');
+    document.getElementById('btnTiny').classList.toggle('active-mode', type === 'tiny');
     document.getElementById('btnPool').classList.toggle('active-mode', type === 'pool');
 }
 
