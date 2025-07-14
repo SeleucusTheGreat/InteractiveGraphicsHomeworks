@@ -144,78 +144,80 @@ function handleBoxCollisions() {
 }
 
 function handleVortexInteraction(deltaTime) {
-    const NUM_VORTEX_LAYERS = 2;       
-    const VORTEX_LAYER_HEIGHT = 0.25;  
-    const VORTEX_BASE_RADIUS = 0.25;     
-    const VORTEX_RADIUS_INCREMENT = 0.25; 
-    const SCALING = 0.5; 
+    // --- Funnel Constants ---
 
-    // --- Force Constants ---
-    const VORTEX_PULL_STRENGTH = 20.0;
-    const VORTEX_ROTATION_STRENGTH = 40.0;
+    const FUNNEL_BOTTOM_RADIUS = 0.6; 
+    const FUNNEL_TOP_RADIUS = FUNNEL_BOTTOM_RADIUS * 4; 
+    const FUNNEL_HEIGHT = 2.0;
 
-    // --- State ---
+
+    const PULL_STRENGTH = 20.0;   
+    const ROTATION_STRENGTH = 80.0; 
+    const DRAIN_STRENGTH = 20.0;  
+
+ 
     const vortexCenterX = mouseState.worldX;
     const vortexCenterZ = mouseState.worldZ;
-    const floorY = currentBoxBounds.y_bottom;
+    const y_bottom = currentBoxBounds.y_bottom;
+    const y_top = y_bottom + FUNNEL_HEIGHT;
 
-    const vortexLayers = [];
-    for (let i = 0; i < NUM_VORTEX_LAYERS; i++) {
-        const layer_y_min = floorY + (i * VORTEX_LAYER_HEIGHT);
-        const layer_y_max = layer_y_min + VORTEX_LAYER_HEIGHT;
-        const radius = VORTEX_BASE_RADIUS + (i * VORTEX_RADIUS_INCREMENT);
-        vortexLayers.push({
-            y_min: layer_y_min,
-            y_max: layer_y_max,
-            radius: radius,
-            radiusSq: radius * radius,
-            number: i 
-        });
-    }
 
     const totalForce = glMatrix.vec3.create();
-    const pullForce = glMatrix.vec3.create();
-    const rotationForce = glMatrix.vec3.create();
+    const toCenterVec = glMatrix.vec3.create();
+    const swirlVec = glMatrix.vec3.create();
+    const drainVec = glMatrix.vec3.fromValues(0, -1, 0); // Downward vector
 
     for (const ball of meshInstances) {
         const ballPos = ball.position;
+        const ballY = ballPos[1];
 
-
-        for (const layer of vortexLayers) {
-            //Check if the ball is within the vertical bounds of this layer
-            if (ballPos[1] >= layer.y_min && ballPos[1] < layer.y_max) {
-                const dx = ballPos[0] - vortexCenterX;
-                const dz = ballPos[2] - vortexCenterZ;
-                const distanceSq = dx * dx + dz * dz;
-
-                //Check if the ball is within the horizontal radius of this layer
-                if (distanceSq <= layer.radiusSq) {
-                    const distance = Math.sqrt(distanceSq);
-                    
-                    // linear falloff
-                    const falloff = 1.0 - (distance / layer.radius);
-
-                    glMatrix.vec3.zero(totalForce);
-
-                    // --- Pull-in force ---
-                    const pullDir = glMatrix.vec3.fromValues(-dx, 0, -dz);
-                    glMatrix.vec3.normalize(pullDir, pullDir);
-                    glMatrix.vec3.scale(pullForce, pullDir, VORTEX_PULL_STRENGTH);
-                    glMatrix.vec3.add(totalForce, totalForce, pullForce);
-
-                    // --- Rotational force ---
-                    const rotationDir = glMatrix.vec3.fromValues(-dz, 0, dx);
-                    glMatrix.vec3.normalize(rotationDir, rotationDir);
-                    glMatrix.vec3.scale(rotationForce, rotationDir, VORTEX_ROTATION_STRENGTH);
-                    glMatrix.vec3.add(totalForce, totalForce, rotationForce);
-
-                    // Apply the combined force
-                    ball.applyForce(totalForce);
-
-                    // A ball can only be in one layer at a time
-                }
-            }
+        //Check if the ball is within the vertical range of the funnel
+        if (ballY < y_bottom || ballY > y_top || FUNNEL_HEIGHT <= 0) {
+            continue;
         }
+
+        //Calculate the funnel's radius at the ball's current height
+        const normalizedHeight = (ballY - y_bottom) / FUNNEL_HEIGHT; 
+        const funnelRadiusAtY = FUNNEL_BOTTOM_RADIUS + normalizedHeight * (FUNNEL_TOP_RADIUS - FUNNEL_BOTTOM_RADIUS);
+
+        //Check if the ball is inside the funnel's cone
+        const dx = ballPos[0] - vortexCenterX;
+        const dz = ballPos[2] - vortexCenterZ;
+        const distanceSqToCenter = dx * dx + dz * dz;
+
+        if (distanceSqToCenter > funnelRadiusAtY * funnelRadiusAtY) {
+            continue; // Ball is outside the cone
+        }
+
+        const distanceToCenter = Math.sqrt(distanceSqToCenter);
+
+        // radial falloff
+        const radialFalloff = 1.0 - (distanceToCenter / funnelRadiusAtY);
+
+        // Vertical falloff
+        const verticalFalloff = 1.0 - normalizedHeight;
+
+        glMatrix.vec3.zero(totalForce);
+
+        // --- Inward Pull Force ---
+        if (distanceToCenter > 0.01) {
+            glMatrix.vec3.set(toCenterVec, -dx, 0, -dz);
+            glMatrix.vec3.normalize(toCenterVec, toCenterVec);
+            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, toCenterVec, PULL_STRENGTH * radialFalloff);
+        }
+
+        // --- Rotational Force ---
+        glMatrix.vec3.set(swirlVec, -dz, 0, dx);
+        if(glMatrix.vec3.length(swirlVec) > 0.001) {
+            glMatrix.vec3.normalize(swirlVec, swirlVec);
+            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, swirlVec, ROTATION_STRENGTH  * radialFalloff * verticalFalloff);
+        }
+
+        // --- Downward Force ---
+        glMatrix.vec3.scaleAndAdd(totalForce, totalForce, drainVec, DRAIN_STRENGTH * verticalFalloff * radialFalloff);
+        
+        // combine all forces
+        ball.applyForce(totalForce);
     }
 }
 
