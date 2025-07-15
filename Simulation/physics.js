@@ -42,7 +42,7 @@ function handleMouseInteraction(deltaTime) {
         handlePushInteraction(deltaTime);
     } else if (currentInteractionMode === 'tornado') {
         handleTornadoInteraction(deltaTime);
-    } else if (currentInteractionMode === 'vortex') { // Add this else-if block
+    } else if (currentInteractionMode === 'vortex') { 
         handleVortexInteraction(deltaTime);
     }
 }
@@ -144,22 +144,11 @@ function handleBoxCollisions() {
 }
 
 function handleVortexInteraction(deltaTime) {
-
-    const FUNNEL_BOTTOM_RADIUS = 0.5; 
-    const FUNNEL_TOP_RADIUS = FUNNEL_BOTTOM_RADIUS * 4; 
-    const FUNNEL_HEIGHT = 1.5;
-
-
-    const PULL_STRENGTH = 30.0;   
-    const ROTATION_STRENGTH = 100.0; 
-    const DRAIN_STRENGTH = 30.0;  
-
- 
+    
     const vortexCenterX = mouseState.worldX;
     const vortexCenterZ = mouseState.worldZ;
     const y_bottom = currentBoxBounds.y_bottom;
     const y_top = y_bottom + FUNNEL_HEIGHT;
-
 
     const totalForce = glMatrix.vec3.create();
     const toCenterVec = glMatrix.vec3.create();
@@ -201,18 +190,18 @@ function handleVortexInteraction(deltaTime) {
         if (distanceToCenter > 0.01) {
             glMatrix.vec3.set(toCenterVec, -dx, 0, -dz);
             glMatrix.vec3.normalize(toCenterVec, toCenterVec);
-            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, toCenterVec, PULL_STRENGTH * radialFalloff);
+            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, toCenterVec, VORTEX_PULL_STRENGTH * radialFalloff);
         }
 
         // --- Rotational Force ---
         glMatrix.vec3.set(swirlVec, -dz, 0, dx);
         if(glMatrix.vec3.length(swirlVec) > 0.001) {
             glMatrix.vec3.normalize(swirlVec, swirlVec);
-            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, swirlVec, ROTATION_STRENGTH  * radialFalloff * verticalFalloff);
+            glMatrix.vec3.scaleAndAdd(totalForce, totalForce, swirlVec, VORTEX_ROTATION_STRENGTH  * radialFalloff * verticalFalloff);
         }
 
         // --- Downward Force ---
-        glMatrix.vec3.scaleAndAdd(totalForce, totalForce, drainVec, DRAIN_STRENGTH * verticalFalloff * radialFalloff);
+        glMatrix.vec3.scaleAndAdd(totalForce, totalForce, drainVec, VORTEX_DRAIN_STRENGTH * verticalFalloff * radialFalloff);
         
         // combine all forces
         ball.applyForce(totalForce);
@@ -220,12 +209,6 @@ function handleVortexInteraction(deltaTime) {
 }
 
 function handleTornadoInteraction(deltaTime) {
-    // --- Constants ---
-    const TORNADO_RADIUS = 1.5;
-    const TORNADO_PULL_STRENGTH = 100.0;    
-    const TORNADO_ROTATION_STRENGTH = 2.0; 
-    const TORNADO_LIFT_STRENGTH = 10.0;  
-
     // --- State ---
     const tornadoCenterX = mouseState.worldX;
     const tornadoCenterZ = mouseState.worldZ;
@@ -274,8 +257,7 @@ function handleTornadoInteraction(deltaTime) {
 
 function handlePushInteraction(deltaTime) {
     const impulse = glMatrix.vec3.create(); 
-    const MOUSE_IMPULSE_MULTIPLIER = 0.10; 
-    const MOUSE_INTERACTION_RADIUS = 0.05; 
+    
     for (const ball of meshInstances) {
         const dx = ball.position[0] - mouseState.worldX;
         const dy = ball.position[1] - (-0.95); 

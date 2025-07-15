@@ -1,6 +1,7 @@
+<!DOCTYPE html>
 <html>
 <head>
-<title>WebGL Physics Spheres</title>
+<title>WebGL Physics Balls</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body onresize="WindowResize()">
@@ -12,7 +13,7 @@
         <label for="FLOOR_FRICTION_DAMPING">Floor Attrition</label>
         <input type="number" id="FLOOR_FRICTION_DAMPING" value="1.0" min="0.0" max="4.0" step="0.1" style="width: 60px;" oninput="UpdateAttrition()">
     </div>
-    <div style="display: flex; gap: 10px; margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
+    <div style="display: flex; gap: 10px; margin-top: 5px; padding-top: 5px;">
         <fieldset>
             <legend style="color: #3377FF;">Blue Balls</legend>
             <label for="numBlue">Count:</label>
@@ -46,6 +47,38 @@
         <button id="btnPush" class="active-mode" onclick="setInteractionMode('push')">Push</button>
         <button id="btnTornado" onclick="setInteractionMode('tornado')">Tornado</button>
         <button id="btnVortex" onclick="setInteractionMode('vortex')">Vortex</button>
+    </div>
+    <div id="interaction-settings-container" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+
+        <!-- Push Settings -->
+        <div id="push-settings" class="settings-group">
+            <label for="pushImpulseMultiplier">Impulse:</label><input type="number" id="pushImpulseMultiplier" value="0.10" min="0.01" max="1.0" step="0.01" oninput="updateInteractionSettings()">
+            <label for="pushInteractionRadius">Radius:</label><input type="number" id="pushInteractionRadius" value="0.05" min="0.01" max="0.5" step="0.01" oninput="updateInteractionSettings()">
+        </div>
+
+        <!-- Tornado Settings -->
+        <div id="tornado-settings" class="settings-group" style="display: none;">
+            <label for="tornadoRadius">Radius:</label><input type="number" id="tornadoRadius" value="1.5" min="0.5" max="5.0" step="0.1" oninput="updateInteractionSettings()">
+            <label for="tornadoPullStrength">Pull:</label><input type="number" id="tornadoPullStrength" value="100" min="10" max="500" step="10" oninput="updateInteractionSettings()">
+            <label for="tornadoRotationStrength">Rotation:</label><input type="number" id="tornadoRotationStrength" value="2.0" min="0.1" max="10.0" step="0.1" oninput="updateInteractionSettings()">
+            <label for="tornadoLiftStrength">Lift:</label><input type="number" id="tornadoLiftStrength" value="10.0" min="0" max="50.0" step="1.0" oninput="updateInteractionSettings()">
+        </div>
+
+        <!-- Vortex Settings -->
+        <div id="vortex-settings" style="display: none; flex-direction: column; align-items: flex-start; gap: 5px;">
+            <!-- First Row -->
+            <div class="settings-group">
+                <label for="vortexBottomRadius">Bottom Radius:</label><input type="number" id="vortexBottomRadius" value="0.5" min="0.1" max="2.0" step="0.1" oninput="updateInteractionSettings()">
+                <label for="vortexTopRadius">Top Radius:</label><input type="number" id="vortexTopRadius" value="2.0" min="0.5" max="5.0" step="0.1" oninput="updateInteractionSettings()">
+                <label for="vortexFunnelHeight">Height:</label><input type="number" id="vortexFunnelHeight" value="1.5" min="0.5" max="5.0" step="0.1" oninput="updateInteractionSettings()">
+            </div>
+            <!-- Second Row -->
+            <div class="settings-group">
+                <label for="vortexPullStrength">Pull:</label><input type="number" id="vortexPullStrength" value="30" min="5" max="200" step="5" oninput="updateInteractionSettings()">
+                <label for="vortexRotationStrength">Rotation:</label><input type="number" id="vortexRotationStrength" value="100" min="10" max="500" step="10" oninput="updateInteractionSettings()">
+                <label for="vortexDrainStrength">Drain:</label><input type="number" id="vortexDrainStrength" value="30" min="5" max="200" step="5" oninput="updateInteractionSettings()">
+            </div>
+        </div>
     </div>
     <div style="margin-top: 5px;">
         <label>Box Type:</label>
@@ -99,6 +132,23 @@ const FLOOR_CONTACT_THRESHOLD = 0.01;
 let RESTITUTION = 0.5;
 let FLOOR_FRICTION_DAMPING = 1.0;
 
+// --- Interaction Parameters---
+// Push
+let MOUSE_IMPULSE_MULTIPLIER;
+let MOUSE_INTERACTION_RADIUS;
+// Tornado
+let TORNADO_RADIUS;
+let TORNADO_PULL_STRENGTH;
+let TORNADO_ROTATION_STRENGTH;
+let TORNADO_LIFT_STRENGTH;
+// Vortex
+let FUNNEL_BOTTOM_RADIUS;
+let FUNNEL_TOP_RADIUS;
+let FUNNEL_HEIGHT;
+let VORTEX_PULL_STRENGTH;
+let VORTEX_ROTATION_STRENGTH;
+let VORTEX_DRAIN_STRENGTH;
+
 // --- Box Constants ---
 const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
 const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
@@ -130,13 +180,35 @@ const BALL_TEXTURES = {
 
  // --- Functions ---
 
+ function updateInteractionSettings() {
+    // Push
+    MOUSE_IMPULSE_MULTIPLIER = parseFloat(document.getElementById('pushImpulseMultiplier').value);
+    MOUSE_INTERACTION_RADIUS = parseFloat(document.getElementById('pushInteractionRadius').value);
+    // Tornado
+    TORNADO_RADIUS = parseFloat(document.getElementById('tornadoRadius').value);
+    TORNADO_PULL_STRENGTH = parseFloat(document.getElementById('tornadoPullStrength').value);
+    TORNADO_ROTATION_STRENGTH = parseFloat(document.getElementById('tornadoRotationStrength').value);
+    TORNADO_LIFT_STRENGTH = parseFloat(document.getElementById('tornadoLiftStrength').value);
+    // Vortex
+    FUNNEL_BOTTOM_RADIUS = parseFloat(document.getElementById('vortexBottomRadius').value);
+    FUNNEL_TOP_RADIUS = parseFloat(document.getElementById('vortexTopRadius').value);
+    FUNNEL_HEIGHT = parseFloat(document.getElementById('vortexFunnelHeight').value);
+    VORTEX_PULL_STRENGTH = parseFloat(document.getElementById('vortexPullStrength').value);
+    VORTEX_ROTATION_STRENGTH = parseFloat(document.getElementById('vortexRotationStrength').value);
+    VORTEX_DRAIN_STRENGTH = parseFloat(document.getElementById('vortexDrainStrength').value);
+}
+
 
 function setInteractionMode(mode) {
     currentInteractionMode = mode;
     document.getElementById('btnPush').classList.toggle('active-mode', mode === 'push');
     document.getElementById('btnTornado').classList.toggle('active-mode', mode === 'tornado');
     document.getElementById('btnVortex').classList.toggle('active-mode', mode === 'vortex');
+    document.getElementById('push-settings').style.display = (mode === 'push') ? 'flex' : 'none';
+    document.getElementById('tornado-settings').style.display = (mode === 'tornado') ? 'flex' : 'none';
+    document.getElementById('vortex-settings').style.display = (mode === 'vortex') ? 'flex' : 'none';
 }
+
 
 function setBoxType(type) {
     currentBoxType = type;
@@ -435,6 +507,7 @@ window.onload = function() {
 	InitWebGL();
     ResetSimulation();
     UpdateRestitution();
+    updateInteractionSettings(); // Initialize interaction parameters from UI
  
     
     canvas.onmousemove = function(event) {

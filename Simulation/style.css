@@ -190,6 +190,14 @@ canvas {
     height: 100%;
 }
 
+.settings-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
 @media (orientation: landscape) {
     #canvas-div {
         display: block;
