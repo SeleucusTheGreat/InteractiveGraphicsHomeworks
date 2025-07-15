@@ -24,7 +24,7 @@ canvas {
     width:  100%;
     height: 100%;
 }
-/* START: Added styles for buttons */
+
 button {
     padding: 5px 10px;
     border: 1px solid #ccc;
@@ -37,7 +37,31 @@ button.active-mode {
     color: white;
     border-color: #3e8e41;
 }
-/* END: Added styles */
+
+
+fieldset {
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 0;
+}
+legend {
+    padding: 0 5px;
+    font-weight: bold;
+}
+fieldset label {
+    display: inline-block;
+    width: 55px;
+    font-size: 12px;
+}
+fieldset input[type=number] {
+    width: 60px;
+    margin-bottom: 4px;
+    background-color: #ddd;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+}
+
 
 #canvas-div { 
     position: relative;

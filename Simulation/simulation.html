@@ -6,13 +6,40 @@
 <body onresize="WindowResize()">
 <div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
     <div>
-        <label for="numInstancesInput">Number of balls:</label>
-        <input type="number" id="numInstancesInput" value="300" min="1" max="1000" style="width: 60px;">
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
         <label for="RESTITUTION">Collision Elasticity</label>
         <input type="number" id="RESTITUTION" value="0.5" min="0.2" max="0.8" step="0.1" style="width: 60px;" oninput="UpdateRestitution()">
         <label for="FLOOR_FRICTION_DAMPING">Floor Attrition</label>
         <input type="number" id="FLOOR_FRICTION_DAMPING" value="1.0" min="0.0" max="4.0" step="0.1" style="width: 60px;" oninput="UpdateAttrition()">
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
+        <fieldset>
+            <legend style="color: #3377FF;">Blue Balls</legend>
+            <label for="numBlue">Count:</label>
+            <input type="number" id="numBlue" value="150" min="0" max="500"><br>
+            <label for="radiusBlue">Radius:</label>
+            <input type="number" id="radiusBlue" value="0.08" min="0.01" max="0.5" step="0.01"><br>
+            <label for="densityBlue">Density:</label>
+            <input type="number" id="densityBlue" value="35" min="1" max="200">
+        </fieldset>
+        <fieldset>
+            <legend style="color: #FF3333;">Red Balls</legend>
+            <label for="numRed">Count:</label>
+            <input type="number" id="numRed" value="100" min="0" max="500"><br>
+            <label for="radiusRed">Radius:</label>
+            <input type="number" id="radiusRed" value="0.12" min="0.01" max="0.5" step="0.01"><br>
+            <label for="densityRed">Density:</label>
+            <input type="number" id="densityRed" value="60" min="1" max="200">
+        </fieldset>
+        <fieldset>
+            <legend style="color: #33FF44;">Green Balls</legend>
+            <label for="numGreen">Count:</label>
+            <input type="number" id="numGreen" value="50" min="0" max="500"><br>
+            <label for="radiusGreen">Radius:</label>
+            <input type="number" id="radiusGreen" value="0.15" min="0.01" max="0.5" step="0.01"><br>
+            <label for="densityGreen">Density:</label>
+            <input type="number" id="densityGreen" value="90" min="1" max="200">
+        </fieldset>
     </div>
     <div style="margin-top: 5px;">
         <label>Interaction Mode:</label>
@@ -180,26 +207,55 @@ function UpdateAttrition() {
 }
 
 function ResetSimulation() {
-    const numInstancesInput = document.getElementById('numInstancesInput');
-    let numToSpawn = parseInt(numInstancesInput.value, 10);
-
-    // Basic validation to ensure the number is within reasonable bounds
-    const minVal = parseInt(numInstancesInput.min, 10) || 1;
-    const maxVal = parseInt(numInstancesInput.max, 10) || 1000;
-
-    if (isNaN(numToSpawn) || numToSpawn < minVal) {
-        numToSpawn = minVal;
-        numInstancesInput.value = minVal;
-    }
-    if (numToSpawn > maxVal) {
-        numToSpawn = maxVal;
-        numInstancesInput.value = maxVal;
-    }
-
-    // Clear old instances and create new ones
+    // Clear old instances
     meshInstances = []; 
-    for (var i = 0; i < numToSpawn; i++) {
-        meshInstances.push(CreateInstance());
+
+    const ballConfigs = [
+        { 
+            type: 'small', 
+            color: [0.2, 0.5, 1.0, 1.0], // Blue
+            numId: 'numBlue',
+            radiusId: 'radiusBlue',
+            densityId: 'densityBlue'
+        },
+        { 
+            type: 'medium', 
+            color: [1.0, 0.2, 0.2, 1.0], // Red
+            numId: 'numRed',
+            radiusId: 'radiusRed',
+            densityId: 'densityRed'
+        },
+        { 
+            type: 'large', 
+            color: [0.2, 1.0, 0.3, 1.0], // Green
+            numId: 'numGreen',
+            radiusId: 'radiusGreen',
+            densityId: 'densityGreen'
+        }
+    ];
+
+    // Loop through each ball type configuration to create instances
+    for (const config of ballConfigs) {
+        // Get values from the UI
+        const numToSpawn = parseInt(document.getElementById(config.numId).value, 10);
+        const radius = parseFloat(document.getElementById(config.radiusId).value);
+        const density = parseFloat(document.getElementById(config.densityId).value);
+
+        // Basic validation
+        if (isNaN(numToSpawn) || isNaN(radius) || isNaN(density) || numToSpawn < 0) {
+            console.warn(`Invalid input for ${config.type} balls. Skipping.`);
+            continue;
+        }
+        
+        // Spawn the balls
+        for (let i = 0; i < numToSpawn; i++) {
+            // Random spawning position within the box
+            const x = (Math.random() - 0.5) * (currentBoxBounds.x * 1.8);
+            const y = (Math.random() * 0.9) + 0.1;
+            const z = (Math.random() - 0.5) * (currentBoxBounds.z * 1.8);
+
+            meshInstances.push(new Ball(x, y, z, radius, config.color, density, config.type));
+        }
     }
 }
 
