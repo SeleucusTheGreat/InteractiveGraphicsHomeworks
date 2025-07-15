@@ -18,27 +18,27 @@
             <label for="numBlue">Count:</label>
             <input type="number" id="numBlue" value="150" min="0" max="500"><br>
             <label for="radiusBlue">Radius:</label>
-            <input type="number" id="radiusBlue" value="0.08" min="0.01" max="0.5" step="0.01"><br>
+            <input type="number" id="radiusBlue" value="0.08" min="0.05" max="0.2" step="0.01"><br>
             <label for="densityBlue">Density:</label>
-            <input type="number" id="densityBlue" value="35" min="1" max="200">
+            <input type="number" id="densityBlue" value="35" min="10" max="200">
         </fieldset>
         <fieldset>
             <legend style="color: #FF3333;">Red Balls</legend>
             <label for="numRed">Count:</label>
             <input type="number" id="numRed" value="100" min="0" max="500"><br>
             <label for="radiusRed">Radius:</label>
-            <input type="number" id="radiusRed" value="0.12" min="0.01" max="0.5" step="0.01"><br>
+            <input type="number" id="radiusRed" value="0.12" min="0.05" max="0.2" step="0.01"><br>
             <label for="densityRed">Density:</label>
-            <input type="number" id="densityRed" value="60" min="1" max="200">
+            <input type="number" id="densityRed" value="60" min="10" max="200">
         </fieldset>
         <fieldset>
             <legend style="color: #33FF44;">Green Balls</legend>
             <label for="numGreen">Count:</label>
             <input type="number" id="numGreen" value="50" min="0" max="500"><br>
             <label for="radiusGreen">Radius:</label>
-            <input type="number" id="radiusGreen" value="0.15" min="0.01" max="0.5" step="0.01"><br>
+            <input type="number" id="radiusGreen" value="0.15" min="0.05" max="0.2" step="0.01"><br>
             <label for="densityGreen">Density:</label>
-            <input type="number" id="densityGreen" value="90" min="1" max="200">
+            <input type="number" id="densityGreen" value="90" min="10" max="200">
         </fieldset>
     </div>
     <div style="margin-top: 5px;">
@@ -57,16 +57,13 @@
     <div id="texture-loader-section">
         <label>Load Textures:</label>
         <div class="texture-input-item">
-            <label for="texSmall">Small Ball (Blue):</label>
-            <input type="file" id="texSmall" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'small')">
+            <label for="texSmall">Small Ball (Blue):<input type="file" id="texSmall" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'small')"></label>
         </div>
         <div class="texture-input-item">
-            <label for="texMedium">Medium Ball (Red):</label>
-            <input type="file" id="texMedium" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'medium')">
+            <label for="texMedium">Medium Ball (Red): <input type="file" id="texMedium" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'medium')"></label>
         </div>
         <div class="texture-input-item">
-            <label for="texLarge">Large Ball (Green):</label>
-            <input type="file" id="texLarge" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'large')">
+            <label for="texLarge">Large Ball (Green):  <input type="file" id="texLarge" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'large')"></label>
         </div>
     </div>
 </div>
