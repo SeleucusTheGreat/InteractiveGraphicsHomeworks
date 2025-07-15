@@ -1,7 +1,7 @@
 html {
     color: white;
     background-color: black;
-    font-family: Arial;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
     height: 100%;
 }
@@ -25,41 +25,161 @@ canvas {
     height: 100%;
 }
 
-button {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    background-color: #f0f0f0;
-    border-radius: 3px;
-    cursor: pointer;
-}
-button.active-mode {
-    background-color: #4CAF50;
-    color: white;
-    border-color: #3e8e41;
+
+#control-panel {
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    z-index: 10;
+    
+    background: rgba(28, 32, 40, 0.85);
+    backdrop-filter: blur(8px);
+    
+    padding: 15px; 
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    
+    color: #e0e0e0;
+    font-size: 14px;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 90vw; 
 }
 
 
-fieldset {
-    border: 1px solid #555;
-    border-radius: 4px;
-    padding: 8px;
+#control-panel > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+#control-panel > div:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+
+#control-panel fieldset {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 12px;
     margin: 0;
+    background: rgba(0, 0, 0, 0.2);
+    transition: border-color 0.3s;
 }
-legend {
-    padding: 0 5px;
+
+#control-panel fieldset:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+#control-panel legend {
+    padding: 2px 8px;
     font-weight: bold;
-}
-fieldset label {
-    display: inline-block;
-    width: 55px;
+    text-transform: uppercase;
     font-size: 12px;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
 }
-fieldset input[type=number] {
+
+#control-panel legend[style*="#3377FF"] { color: #58a6ff; background: rgba(88, 166, 255, 0.1); }
+#control-panel legend[style*="#FF3333"] { color: #ff7b72; background: rgba(255, 123, 114, 0.1); }
+#control-panel legend[style*="#33FF44"] { color: #56d364; background: rgba(86, 211, 100, 0.1); }
+
+
+#control-panel label {
+    font-weight: normal;
+    margin-right: 5px;
+    font-size: 13px;
+}
+#control-panel fieldset label {
+    display: inline-block;
     width: 60px;
-    margin-bottom: 4px;
-    background-color: #ddd;
-    border: 1px solid #aaa;
-    border-radius: 2px;
+}
+
+
+#control-panel input[type=number] {
+    width: 65px;
+    background-color: #1c2028;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 5px 6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+#control-panel input[type=number]:focus {
+    outline: none;
+    border-color: #58a6ff;
+    box-shadow: 0 0 5px rgba(88, 166, 255, 0.5);
+}
+
+
+#control-panel button {
+    padding: 6px 12px;
+    border: 1px solid #555;
+    background-color: #3a3f4b;
+    color: #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+}
+#control-panel button:hover {
+    background-color: #4a4f5c;
+    border-color: #777;
+}
+#control-panel button:active {
+    transform: translateY(1px);
+}
+#control-panel button.active-mode {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0a58ca;
+}
+#control-panel button.active-mode:hover {
+    background-color: #0b5ed7;
+}
+
+
+#control-panel input[type=file] {
+    font-size: 12px;
+    color: #bbb;
+}
+#control-panel input[type=file]::file-selector-button {
+    padding: 4px 10px;
+    border: 1px solid #555;
+    background-color: #3a3f4b;
+    color: #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-right: 10px;
+}
+#control-panel input[type=file]::file-selector-button:hover {
+    background-color: #4a4f5c;
+}
+
+#texture-loader-section {
+    flex-direction: column;      
+    align-items: flex-start;     
+    gap: 10px;                   
+    align-self: flex-start;    
+}
+
+
+.texture-input-item {
+    margin-bottom: 5px;
+}
+
+
+.texture-input-item label {
+    display: block;
+    margin-right: 0;
+    margin-bottom: 6px; 
 }
 
 

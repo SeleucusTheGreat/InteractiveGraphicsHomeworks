@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body onresize="WindowResize()">
-<div style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
+<div id="control-panel">
     <div>
         <button onclick="ResetSimulation()">Spawn/Reset Balls</button>
         <label for="RESTITUTION">Collision Elasticity</label>
@@ -54,17 +54,17 @@
         <button id="btnTiny" onclick="setBoxType('tiny')">Tiny</button>
         <button id="btnPool" onclick="setBoxType('pool')">Pool</button>
     </div>
-    <div style="margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px;">
+    <div id="texture-loader-section">
         <label>Load Textures:</label>
-        <div>
+        <div class="texture-input-item">
             <label for="texSmall">Small Ball (Blue):</label>
             <input type="file" id="texSmall" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'small')">
         </div>
-        <div>
+        <div class="texture-input-item">
             <label for="texMedium">Medium Ball (Red):</label>
             <input type="file" id="texMedium" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'medium')">
         </div>
-        <div>
+        <div class="texture-input-item">
             <label for="texLarge">Large Ball (Green):</label>
             <input type="file" id="texLarge" accept="image/png, image/jpeg" onchange="loadTextureFromFile(event, 'large')">
         </div>
@@ -80,39 +80,28 @@
 <script type="text/javascript" src="ball.js"></script>
 <script type="text/javascript">
 
+
+
+
+ // --- Global Variables ---
 const { mat4, vec3, vec4 } = glMatrix;
-	
+var viewProjMatrix; 
+var viewMatrix; 
+let currentInteractionMode = 'push';  
 var meshInstances = [];
 var boxDrawer;
 var ballDrawer;
 var canvas, gl;
 var perspectiveMatrix = mat4.create();	
 var rotX=0, rotY=0, transZ=5, transY=0; 
-var lastTime = 0; 
-
-var viewProjMatrix; 
-var viewMatrix; 
-let currentInteractionMode = 'push';  
-
-const mouseState = {
-    x: -1, y: -1,     
-    worldX: 0, worldY: 0, worldZ: 0,
-    velX: 0, velY: 0, velZ: 0,
-    lastWorldX: 0, lastWorldY: 0, lastWorldZ: 0,
-    hasMoved: false
-};
-
-const BALL_TEXTURES = {
-    small: 'ball_texture_1.png',
-    medium: 'ball_texture_2.png',
-    large: 'ball_texture_3.png'
-};
+var lastTime = 0;  
 
 // --- Physics Constants ---
 const GRAVITY = -9.8; 
 const FLOOR_CONTACT_THRESHOLD = 0.01;
 let RESTITUTION = 0.5;
 let FLOOR_FRICTION_DAMPING = 1.0;
+
 // --- Box Constants ---
 const BOX_BOUNDS_STANDARD = { x: 2.0, y_bottom: -1.0, y_top: 1.0, z: 2.0 };
 const BOX_BOUNDS_TALL = { x: 2.0, y_bottom: -1.0, y_top: 10.0, z: 2.0 };
@@ -121,9 +110,28 @@ const BOX_BOUNDS_TINY = { x: 1.0, y_bottom: -1.0, y_top: 4.5, z: 1.0 };
 let currentBoxType = 'standard';
 let currentBoxBounds = BOX_BOUNDS_STANDARD;
 
-
 // --- Light Constants ---
 const LIGHT_POSITION = [0.0, 15.0, 0.0];
+
+// --- Mouse State ---
+const mouseState = {
+    x: -1, y: -1,     
+    worldX: 0, worldY: 0, worldZ: 0,
+    velX: 0, velY: 0, velZ: 0,
+    lastWorldX: 0, lastWorldY: 0, lastWorldZ: 0,
+    hasMoved: false
+};
+
+// --- Ball Textures ---
+const BALL_TEXTURES = {
+    small: 'ball_texture_1.png',
+    medium: 'ball_texture_2.png',
+    large: 'ball_texture_3.png'
+};
+
+
+
+ // --- Functions ---
 
 
 function setInteractionMode(mode) {

@@ -144,16 +144,15 @@ function handleBoxCollisions() {
 }
 
 function handleVortexInteraction(deltaTime) {
-    // --- Funnel Constants ---
 
-    const FUNNEL_BOTTOM_RADIUS = 0.6; 
+    const FUNNEL_BOTTOM_RADIUS = 0.5; 
     const FUNNEL_TOP_RADIUS = FUNNEL_BOTTOM_RADIUS * 4; 
-    const FUNNEL_HEIGHT = 2.0;
+    const FUNNEL_HEIGHT = 1.5;
 
 
-    const PULL_STRENGTH = 20.0;   
-    const ROTATION_STRENGTH = 80.0; 
-    const DRAIN_STRENGTH = 20.0;  
+    const PULL_STRENGTH = 30.0;   
+    const ROTATION_STRENGTH = 100.0; 
+    const DRAIN_STRENGTH = 30.0;  
 
  
     const vortexCenterX = mouseState.worldX;
@@ -165,7 +164,7 @@ function handleVortexInteraction(deltaTime) {
     const totalForce = glMatrix.vec3.create();
     const toCenterVec = glMatrix.vec3.create();
     const swirlVec = glMatrix.vec3.create();
-    const drainVec = glMatrix.vec3.fromValues(0, -1, 0); // Downward vector
+    const drainVec = glMatrix.vec3.fromValues(0, -1, 0);
 
     for (const ball of meshInstances) {
         const ballPos = ball.position;
@@ -175,8 +174,7 @@ function handleVortexInteraction(deltaTime) {
         if (ballY < y_bottom || ballY > y_top || FUNNEL_HEIGHT <= 0) {
             continue;
         }
-
-        //Calculate the funnel's radius at the ball's current height
+        // Calculate the normalized height of the ball within the funnel
         const normalizedHeight = (ballY - y_bottom) / FUNNEL_HEIGHT; 
         const funnelRadiusAtY = FUNNEL_BOTTOM_RADIUS + normalizedHeight * (FUNNEL_TOP_RADIUS - FUNNEL_BOTTOM_RADIUS);
 
